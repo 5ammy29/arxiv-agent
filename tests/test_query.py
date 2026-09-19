@@ -55,3 +55,34 @@ def test_process_integer_query():
 
     with pytest.raises(TypeError, match="query must be a string"):
         processor.process(123)
+
+class FakeLLM:
+    def __init__(self):
+        self.query = None
+
+    def rewrite_query(self, query):
+        self.query = query
+        return "rewritten research query"
+
+
+def test_process_uses_llm():
+    llm = FakeLLM()
+    processor = QueryProcessor(llm=llm)
+
+    result = processor.process("   What   is the model?   ")
+
+    assert result == "rewritten research query"
+    assert llm.query == "What is the model?"
+
+def test_process_rejects_empty_llm_result():
+    class FakeLLM:
+        def rewrite_query(self, query):
+            return ""
+
+    processor = QueryProcessor(llm=FakeLLM())
+
+    try:
+        processor.process("What is the model?")
+        assert False
+    except ValueError:
+        pass
