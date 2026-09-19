@@ -124,3 +124,14 @@ def test_empty_chunks_are_ignored():
 
     assert store.index is None
     assert store.chunks == []
+
+def test_search_result_has_no_rerank_score_initially():
+    store = VectorStore()
+
+    chunks = create_chunks()
+
+    store.add_chunks(chunks)
+
+    results = store.search("What optimizer is used for training?", top_k=1)
+
+    assert results[0].rerank_score is None

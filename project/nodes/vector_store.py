@@ -8,6 +8,7 @@ from sentence_transformers import SentenceTransformer
 class SearchResult:
     chunk: TextChunk
     score: float
+    rerank_score: float | None = None
 
 class VectorStore:
     def __init__(self, model_name: str = "BAAI/bge-base-en-v1.5"):
