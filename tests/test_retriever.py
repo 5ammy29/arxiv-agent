@@ -23,6 +23,17 @@ class FakeVectorStore:
 
         return results
 
+class FakeReranker:
+    def __init__(self):
+        self.query = None
+        self.results = None
+
+    def rerank(self, query: str, results: list[SearchResult]) -> list[SearchResult]:
+        self.query = query
+        self.results = results
+
+        return list(reversed(results))
+
 def test_retrieve_returns_results():
     vector_store = FakeVectorStore()
     retriever = Retriever(vector_store)
@@ -113,3 +124,34 @@ def test_retrieve_rejects_negative_invalid_similarity_threshold():
         assert False
     except ValueError:
         pass
+
+def test_retrieve_uses_reranker():
+    vector_store = FakeVectorStore()
+    reranker = FakeReranker()
+    retriever = Retriever(vector_store, reranker=reranker)
+
+    results = retriever.retrieve("What architecture does the model use?")
+
+    assert len(results) == 2
+    assert results[0].chunk.chunk_id == 1
+    assert results[1].chunk.chunk_id == 0
+
+def test_retrieve_passes_processed_query_to_reranker():
+    vector_store = FakeVectorStore()
+    reranker = FakeReranker()
+    retriever = Retriever(vector_store, reranker=reranker)
+
+    retriever.retrieve("   What   architecture does the model use?   ")
+
+    assert reranker.query == "What architecture does the model use?"
+
+def test_retrieve_filters_results_before_reranking():
+    vector_store = FakeVectorStore()
+    reranker = FakeReranker()
+    retriever = Retriever(vector_store, reranker=reranker)
+
+    results = retriever.retrieve("What architecture does the model use?", similarity_threshold=0.8)
+
+    assert len(reranker.results) == 1
+    assert reranker.results[0].score == 0.91
+    assert len(results) == 1
