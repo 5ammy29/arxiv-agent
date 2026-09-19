@@ -1,9 +1,18 @@
 import pymupdf
 import requests
+from dataclasses import dataclass
 from pathlib import Path
+
 
 class PDFDownloadError(Exception):
     pass
+
+
+@dataclass
+class PDFPage:
+    page: int
+    text: str
+
 
 class PDFProcessor:
     def __init__(self, output_dir: str = "data/papers"):
@@ -25,16 +34,16 @@ class PDFProcessor:
 
         return pdf_path
 
-    def parse_pdf(self, pdf_path: Path) -> str:
+    def parse_pdf(self, pdf_path: Path) -> list[PDFPage]:
         document = pymupdf.open(pdf_path)
 
         pages = []
 
-        for page in document:
-            text = page.get_text()
-            pages.append(text)
+        try:
+            for page_number, page in enumerate(document, start=1):
+                pages.append(PDFPage(page=page_number, text=page.get_text()))
+        finally:
+            document.close()
 
-        document.close()
-
-        return "\n".join(pages)
+        return pages
     
