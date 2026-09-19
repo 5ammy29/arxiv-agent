@@ -67,3 +67,49 @@ def test_retrieve_rejects_empty_query():
         assert False
     except ValueError:
         pass
+
+def test_retrieve_filters_by_similarity_threshold():
+    vector_store = FakeVectorStore()
+    retriever = Retriever(vector_store)
+
+    results = retriever.retrieve("What architecture does the model use?", similarity_threshold=0.8)
+
+    assert len(results) == 1
+    assert results[0].score == 0.91
+
+def test_retrieve_includes_result_at_similarity_threshold():
+    vector_store = FakeVectorStore()
+    retriever = Retriever(vector_store)
+
+    results = retriever.retrieve("What architecture does the model use?", similarity_threshold=0.91)
+
+    assert len(results) == 1
+    assert results[0].score == 0.91
+
+def test_retrieve_returns_no_results_below_threshold():
+    vector_store = FakeVectorStore()
+    retriever = Retriever(vector_store)
+
+    results = retriever.retrieve("What architecture does the model use?", similarity_threshold=0.95)
+
+    assert results == []
+
+def test_retrieve_rejects_invalid_similarity_threshold():
+    vector_store = FakeVectorStore()
+    retriever = Retriever(vector_store)
+
+    try:
+        retriever.retrieve("What architecture does the model use?", similarity_threshold=1.1)
+        assert False
+    except ValueError:
+        pass
+
+def test_retrieve_rejects_negative_invalid_similarity_threshold():
+    vector_store = FakeVectorStore()
+    retriever = Retriever(vector_store)
+
+    try:
+        retriever.retrieve("What architecture does the model use?", similarity_threshold=-1.1)
+        assert False
+    except ValueError:
+        pass

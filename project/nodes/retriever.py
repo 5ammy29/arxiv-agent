@@ -10,7 +10,22 @@ class Retriever:
 
         self.query_processor = query_processor
 
-    def retrieve(self, query: str, top_k: int = 5) -> list[SearchResult]:
+    def retrieve(self, query: str, top_k: int = 5, similarity_threshold: float | None = None) -> list[SearchResult]:
         processed_query = self.query_processor.process(query)
 
-        return self.vector_store.search(processed_query, top_k=top_k)
+        if similarity_threshold is not None:
+            if similarity_threshold < -1.0 or similarity_threshold > 1.0:
+                raise ValueError("similarity_threshold must be between -1.0 and 1.0")
+
+        results = self.vector_store.search(processed_query, top_k=top_k)
+
+        if similarity_threshold is None:
+            return results
+
+        filtered_results = []
+
+        for result in results:
+            if result.score >= similarity_threshold:
+                filtered_results.append(result)
+
+        return filtered_results
