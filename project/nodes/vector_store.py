@@ -1,7 +1,13 @@
 import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
+from dataclasses import dataclass
 from project.nodes.chunker import TextChunk
+from sentence_transformers import SentenceTransformer
+
+@dataclass
+class SearchResult:
+    chunk: TextChunk
+    score: float
 
 class VectorStore:
     def __init__(self, model_name: str = "BAAI/bge-base-en-v1.5"):
@@ -19,7 +25,6 @@ class VectorStore:
             texts.append(chunk.text)
 
         embeddings = self.model.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
-
         embeddings = embeddings.astype(np.float32)
 
         if self.index is None:
@@ -31,7 +36,7 @@ class VectorStore:
         for chunk in chunks:
             self.chunks.append(chunk)
 
-    def search(self, query: str, top_k: int = 5) -> list[TextChunk]:
+    def search(self, query: str, top_k: int = 5) -> list[SearchResult]:
         if self.index is None or not self.chunks:
             return []
 
@@ -39,7 +44,6 @@ class VectorStore:
             raise ValueError("top_k must be positive")
 
         query_embedding = self.model.encode([query], convert_to_numpy=True, normalize_embeddings=True)
-
         query_embedding = query_embedding.astype(np.float32)
 
         top_k = min(top_k, len(self.chunks))
@@ -48,8 +52,8 @@ class VectorStore:
 
         results = []
 
-        for index in indices[0]:
+        for score, index in zip(distances[0], indices[0]):
             if index != -1:
-                results.append(self.chunks[index])
+                results.append(SearchResult(chunk=self.chunks[index], score=float(score)))
 
         return results

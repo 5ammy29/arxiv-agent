@@ -1,13 +1,11 @@
 from project.nodes.chunker import TextChunk
-from project.nodes.vector_store import VectorStore
+from project.nodes.vector_store import SearchResult, VectorStore
 
 def create_chunks():
     chunks = []
 
     chunks.append(TextChunk(chunk_id=0, page=1, text="Transformers use self attention to process sequences."))
-
     chunks.append(TextChunk(chunk_id=1, page=2, text="The experiment uses a dataset of medical images."))
-
     chunks.append(TextChunk(chunk_id=2, page=3, text="The model is trained using the Adam optimizer."))
 
     return chunks
@@ -42,8 +40,9 @@ def test_search_returns_chunks():
     assert len(results) == 2
 
     for result in results:
-        assert isinstance(result, TextChunk)
-
+        assert isinstance(result, SearchResult)
+        assert isinstance(result.chunk, TextChunk)
+        assert isinstance(result.score, float)
 
 def test_search_returns_most_relevant_chunk():
     store = VectorStore()
@@ -55,8 +54,20 @@ def test_search_returns_most_relevant_chunk():
     results = store.search("What optimizer is used for training?", top_k=1)
 
     assert len(results) == 1
-    assert results[0].chunk_id == 2
+    assert results[0].chunk.chunk_id == 2
 
+def test_search_returns_similarity_score():
+    store = VectorStore()
+
+    chunks = create_chunks()
+
+    store.add_chunks(chunks)
+
+    results = store.search("What optimizer is used for training?", top_k=1)
+
+    assert len(results) == 1
+    assert results[0].score >= -1.0
+    assert results[0].score <= 1.0
 
 def test_top_k_limits_results():
     store = VectorStore()
@@ -68,7 +79,6 @@ def test_top_k_limits_results():
     results = store.search("What does the paper discuss?", top_k=2)
 
     assert len(results) == 2
-
 
 def test_top_k_cannot_be_zero():
     store = VectorStore()
@@ -83,7 +93,6 @@ def test_top_k_cannot_be_zero():
     except ValueError:
         pass
 
-
 def test_top_k_cannot_be_negative():
     store = VectorStore()
 
@@ -97,7 +106,6 @@ def test_top_k_cannot_be_negative():
     except ValueError:
         pass
 
-
 def test_top_k_larger_than_chunk_count():
     store = VectorStore()
 
@@ -108,7 +116,6 @@ def test_top_k_larger_than_chunk_count():
     results = store.search("What is the paper about?", top_k=10)
 
     assert len(results) == 3
-
 
 def test_empty_chunks_are_ignored():
     store = VectorStore()
