@@ -5,6 +5,7 @@ from project.nodes.vector_store import SearchResult
 
 class AgentState(TypedDict, total=False):
     query: str
+    paper: str
     processed_query: str
     papers: list[Paper]
     selected_paper: Paper

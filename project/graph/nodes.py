@@ -148,3 +148,23 @@ def route_after_answer(state: AgentState):
         return "build_answer"
 
     return "error"
+
+def search_paper(state: AgentState, arxiv_client: ArxivClient):
+    try:
+        paper = arxiv_client.search_by_id(state["paper"])
+    except Exception:
+        return {"papers": [], "error": "Failed to find paper"}
+
+    if paper is None:
+        return {"papers": [], "error": "Paper not found"}
+
+    return {"papers": [paper]}
+
+def route_after_query(state: AgentState):
+    if not state.get("processed_query"):
+        return "error"
+
+    if state.get("paper"):
+        return "search_paper"
+
+    return "search_arxiv"
