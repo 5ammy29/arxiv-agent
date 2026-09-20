@@ -1,3 +1,4 @@
+import re
 from project.graph.state import AgentState
 from project.nodes.arxiv import ArxivClient, ArxivError
 from project.nodes.answer import AnswerBuilder
@@ -42,7 +43,22 @@ def select_paper(state: AgentState):
     if not papers:
         raise ValueError("No papers available for selection")
 
-    return {"selected_paper": papers[0]}
+    query = state["processed_query"].lower()
+    query_terms = set(re.findall(r"\b[a-z0-9]+\b", query))
+
+    best_paper = papers[0]
+    best_score = -1
+
+    for paper in papers:
+        text = f"{paper.title} {paper.abstract}".lower()
+        terms = set(re.findall(r"\b[a-z0-9]+\b", text))
+        score = len(query_terms & terms)
+
+        if score > best_score:
+            best_score = score
+            best_paper = paper
+
+    return {"selected_paper": best_paper}
 
 def download_pdf(state: AgentState, pdf_processor: PDFProcessor):
     paper = state["selected_paper"]

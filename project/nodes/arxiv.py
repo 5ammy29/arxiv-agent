@@ -22,7 +22,7 @@ class ArxivClient:
     def __init__(self):
         self.client = arxiv.Client()
 
-    def search_by_topic(self, query: str, max_results: int = 5) -> list[Paper]:
+    def search_by_topic(self, query: str, max_results: int = 10) -> list[Paper]:
         if not query.strip():
             raise ValueError("search query cannot be empty")
 
