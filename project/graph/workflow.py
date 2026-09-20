@@ -12,6 +12,9 @@ from project.graph.nodes import (
     search_arxiv,
     select_paper,
     build_answer,
+    route_after_chunking,
+    route_after_retrieval,
+    route_after_download,
 )
 from project.graph.state import AgentState
 from project.nodes.arxiv import ArxivClient
@@ -86,9 +89,34 @@ def build_workflow(
     )
 
     graph.add_edge("select_paper", "download_pdf")
-    graph.add_edge("download_pdf", "parse_and_chunk")
-    graph.add_edge("parse_and_chunk", "retrieve_chunks")
-    graph.add_edge("retrieve_chunks", "generate_answer")
+
+    graph.add_conditional_edges(
+        "download_pdf",
+        route_after_download,
+        {
+            "parse_and_chunk": "parse_and_chunk",
+            "error": "error",
+        },
+    )
+
+    graph.add_conditional_edges(
+        "parse_and_chunk",
+        route_after_chunking,
+        {
+            "retrieve_chunks": "retrieve_chunks",
+            "error": "error",
+        },
+    )
+
+    graph.add_conditional_edges(
+        "retrieve_chunks",
+        route_after_retrieval,
+        {
+            "generate_answer": "generate_answer",
+            "error": "error",
+        },
+    )
+
     graph.add_edge("generate_answer", "build_answer")
     graph.add_edge("build_answer", END)
     graph.add_edge("error", END)

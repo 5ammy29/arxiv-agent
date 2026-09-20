@@ -135,3 +135,14 @@ def test_search_result_has_no_rerank_score_initially():
     results = store.search("What optimizer is used for training?", top_k=1)
 
     assert results[0].rerank_score is None
+
+def test_reset_clears_index_and_chunks():
+    store = VectorStore.__new__(VectorStore)
+
+    store.index = object()
+    store.chunks = ["chunk"]
+
+    store.reset()
+
+    assert store.index is None
+    assert store.chunks == []

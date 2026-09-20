@@ -16,6 +16,10 @@ class VectorStore:
         self.index = None
         self.chunks: list[TextChunk] = []
 
+    def reset(self) -> None:
+        self.index = None
+        self.chunks = []
+
     def add_chunks(self, chunks: list[TextChunk]) -> None:
         if not chunks:
             return

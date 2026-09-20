@@ -149,6 +149,9 @@ def test_full_workflow_execution():
             return ["chunk-1"]
 
     class FakeVectorStore:
+        def reset(self):
+            pass
+
         def add_chunks(self, chunks):
             pass
 
@@ -197,3 +200,180 @@ def test_full_workflow_execution():
     assert "## Source" in result["answer"]
     assert "Test Paper" in result["answer"]
     assert "arXiv: 1234.5678" in result["answer"]
+
+def test_workflow_routes_to_error_when_no_chunks():
+    def parse_and_chunk(state: AgentState):
+        return {
+            "chunks": [],
+            "error": "No usable text was found in the paper",
+        }
+
+    def route_after_chunking(state: AgentState):
+        if state.get("chunks"):
+            return "retrieve_chunks"
+
+        return "error"
+
+    def retrieve_chunks(state: AgentState):
+        return {"results": ["should-not-run"]}
+
+    def handle_error(state: AgentState):
+        return {"answer": state["error"]}
+
+    graph = StateGraph(AgentState)
+
+    graph.add_node("parse_and_chunk", parse_and_chunk)
+    graph.add_node("retrieve_chunks", retrieve_chunks)
+    graph.add_node("error", handle_error)
+
+    graph.add_edge(START, "parse_and_chunk")
+
+    graph.add_conditional_edges(
+        "parse_and_chunk",
+        route_after_chunking,
+        {
+            "retrieve_chunks": "retrieve_chunks",
+            "error": "error",
+        },
+    )
+
+    graph.add_edge("retrieve_chunks", END)
+    graph.add_edge("error", END)
+
+    workflow = graph.compile()
+
+    result = workflow.invoke({"query": "transformers"})
+
+    assert result["answer"] == "No usable text was found in the paper"
+
+def test_workflow_routes_to_error_when_no_results():
+    def retrieve_chunks(state: AgentState):
+        return {
+            "results": [],
+            "error": "No relevant information was found in the paper",
+        }
+
+    def route_after_retrieval(state: AgentState):
+        if state.get("results"):
+            return "generate_answer"
+
+        return "error"
+
+    def generate_answer(state: AgentState):
+        return {"answer": "should-not-run"}
+
+    def handle_error(state: AgentState):
+        return {"answer": state["error"]}
+
+    graph = StateGraph(AgentState)
+
+    graph.add_node("retrieve_chunks", retrieve_chunks)
+    graph.add_node("generate_answer", generate_answer)
+    graph.add_node("error", handle_error)
+
+    graph.add_edge(START, "retrieve_chunks")
+
+    graph.add_conditional_edges(
+        "retrieve_chunks",
+        route_after_retrieval,
+        {
+            "generate_answer": "generate_answer",
+            "error": "error",
+        },
+    )
+
+    graph.add_edge("generate_answer", END)
+    graph.add_edge("error", END)
+
+    workflow = graph.compile()
+
+    result = workflow.invoke({"query": "transformers"})
+
+    assert result["answer"] == "No relevant information was found in the paper"
+
+def test_workflow_routes_to_error_when_pdf_download_fails():
+    def download_pdf(state: AgentState):
+        return {"error": "Failed to download PDF for 1234.5678"}
+
+    def route_after_download(state: AgentState):
+        if state.get("pdf_path"):
+            return "parse_and_chunk"
+
+        return "error"
+
+    def parse_and_chunk(state: AgentState):
+        return {"chunks": ["should-not-run"]}
+
+    def handle_error(state: AgentState):
+        return {"answer": state["error"]}
+
+    graph = StateGraph(AgentState)
+
+    graph.add_node("download_pdf", download_pdf)
+    graph.add_node("parse_and_chunk", parse_and_chunk)
+    graph.add_node("error", handle_error)
+
+    graph.add_edge(START, "download_pdf")
+
+    graph.add_conditional_edges(
+        "download_pdf",
+        route_after_download,
+        {
+            "parse_and_chunk": "parse_and_chunk",
+            "error": "error",
+        },
+    )
+
+    graph.add_edge("parse_and_chunk", END)
+    graph.add_edge("error", END)
+
+    workflow = graph.compile()
+
+    result = workflow.invoke({"query": "transformers"})
+
+    assert result["answer"] == "Failed to download PDF for 1234.5678"
+
+def test_workflow_routes_to_error_when_arxiv_search_fails():
+    def search_arxiv(state: AgentState):
+        return {
+            "papers": [],
+            "error": "Failed to search arXiv",
+        }
+
+    def route_after_search(state: AgentState):
+        if state.get("papers"):
+            return "select_paper"
+
+        return "error"
+
+    def select_paper(state: AgentState):
+        return {"selected_paper": state["papers"][0]}
+
+    def handle_error(state: AgentState):
+        return {"answer": state["error"]}
+
+    graph = StateGraph(AgentState)
+
+    graph.add_node("search_arxiv", search_arxiv)
+    graph.add_node("select_paper", select_paper)
+    graph.add_node("error", handle_error)
+
+    graph.add_edge(START, "search_arxiv")
+
+    graph.add_conditional_edges(
+        "search_arxiv",
+        route_after_search,
+        {
+            "select_paper": "select_paper",
+            "error": "error",
+        },
+    )
+
+    graph.add_edge("select_paper", END)
+    graph.add_edge("error", END)
+
+    workflow = graph.compile()
+
+    result = workflow.invoke({"query": "transformers"})
+
+    assert result["answer"] == "Failed to search arXiv"

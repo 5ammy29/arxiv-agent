@@ -1,7 +1,7 @@
 import pytest
 from datetime import datetime
 from unittest.mock import MagicMock
-from project.nodes.arxiv import ArxivClient, Paper
+from project.nodes.arxiv import ArxivClient, Paper, ArxivError
 
 def create_mock_result():
     result = MagicMock()
@@ -130,4 +130,18 @@ def test_normalize_result():
     assert paper.url == "https://arxiv.org/abs/2401.12345"
     assert paper.pdf_url == "https://arxiv.org/pdf/2401.12345"
     assert paper.categories == ["cs.AI", "cs.LG"]
-    
+
+def test_search_by_topic_raises_arxiv_error():
+    class FakeClient:
+        def results(self, search):
+            raise RuntimeError("network failure")
+
+    client = ArxivClient()
+    client.client = FakeClient()
+
+    try:
+        client.search_by_topic("transformers")
+    except ArxivError as error:
+        assert str(error) == "Failed to search arXiv"
+    else:
+        raise AssertionError("Expected ArxivError")

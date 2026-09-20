@@ -15,25 +15,34 @@ class Paper(BaseModel):
     pdf_url: str
     categories: list[str]
 
+class ArxivError(Exception):
+    pass
 
 class ArxivClient:
     def __init__(self):
         self.client = arxiv.Client()
 
-    def search_by_topic(self, query: str, max_results: int = 5) -> list[Paper]:     # default max_results = 5
+    def search_by_topic(self, query: str, max_results: int = 5) -> list[Paper]:
         if not query.strip():
             raise ValueError("search query cannot be empty")
 
-        search = arxiv.Search(query=query, max_results=max_results, sort_by=arxiv.SortCriterion.Relevance)     # create the search request
+        search = arxiv.Search(
+            query=query,
+            max_results=max_results,
+            sort_by=arxiv.SortCriterion.Relevance,
+        )
 
-        results = self.client.results(search)
+        try:
+            results = self.client.results(search)
 
-        normalized_results = []
+            normalized_results = []
 
-        for result in results:
-            normalized_results.append(self._normalize_result(result))
+            for result in results:
+                normalized_results.append(self._normalize_result(result))
 
-        return normalized_results
+            return normalized_results
+        except Exception as error:
+            raise ArxivError("Failed to search arXiv") from error
 
     @staticmethod
     def _normalize_result(result: arxiv.Result) -> Paper:
