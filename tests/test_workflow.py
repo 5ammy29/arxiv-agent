@@ -5,6 +5,9 @@ from project.graph.workflow import build_workflow
 from langgraph.graph import END, START, StateGraph
 from project.nodes.chunker import TextChunk
 from project.nodes.vector_store import SearchResult
+from project.nodes.llm import LLMError
+from project.graph.nodes import generate_answer, parse_and_chunk, process_query
+from project.nodes.pdf import PDFParseError
 
 def test_workflow_routes_to_error_when_no_papers():
     def search_arxiv(state: AgentState):
@@ -377,3 +380,191 @@ def test_workflow_routes_to_error_when_arxiv_search_fails():
     result = workflow.invoke({"query": "transformers"})
 
     assert result["answer"] == "Failed to search arXiv"
+
+def test_workflow_routes_to_error_when_query_processing_fails():
+    def process_query(state: AgentState):
+        return {"error": "Failed to process query"}
+
+    def route_after_query(state: AgentState):
+        if state.get("processed_query"):
+            return "search_arxiv"
+
+        return "error"
+
+    def search_arxiv(state: AgentState):
+        return {"papers": ["should-not-run"]}
+
+    def handle_error(state: AgentState):
+        return {"answer": state["error"]}
+
+    graph = StateGraph(AgentState)
+
+    graph.add_node("process_query", process_query)
+    graph.add_node("search_arxiv", search_arxiv)
+    graph.add_node("error", handle_error)
+
+    graph.add_edge(START, "process_query")
+
+    graph.add_conditional_edges(
+        "process_query",
+        route_after_query,
+        {
+            "search_arxiv": "search_arxiv",
+            "error": "error",
+        },
+    )
+
+    graph.add_edge("search_arxiv", END)
+    graph.add_edge("error", END)
+
+    workflow = graph.compile()
+
+    result = workflow.invoke({"query": "transformers"})
+
+    assert result["answer"] == "Failed to process query"
+
+def test_workflow_routes_to_error_when_answer_generation_fails():
+    def generate_answer(state: AgentState):
+        return {"error": "Failed to generate answer"}
+
+    def route_after_answer(state: AgentState):
+        if state.get("answer"):
+            return "build_answer"
+
+        return "error"
+
+    def build_answer(state: AgentState):
+        return {"answer": "should-not-run"}
+
+    def handle_error(state: AgentState):
+        return {"answer": state["error"]}
+
+    graph = StateGraph(AgentState)
+
+    graph.add_node("generate_answer", generate_answer)
+    graph.add_node("build_answer", build_answer)
+    graph.add_node("error", handle_error)
+
+    graph.add_edge(START, "generate_answer")
+
+    graph.add_conditional_edges(
+        "generate_answer",
+        route_after_answer,
+        {
+            "build_answer": "build_answer",
+            "error": "error",
+        },
+    )
+
+    graph.add_edge("build_answer", END)
+    graph.add_edge("error", END)
+
+    workflow = graph.compile()
+
+    result = workflow.invoke({"query": "transformers"})
+
+    assert result["answer"] == "Failed to generate answer"
+
+def test_process_query_handles_llm_error():
+    class FakeQueryProcessor:
+        def process(self, query):
+            raise LLMError("LLM unavailable")
+
+    state = {"query": "transformers"}
+
+    result = process_query(state, FakeQueryProcessor())
+
+    assert result["error"] == "Failed to process query"
+
+
+def test_generate_answer_handles_llm_error():
+    class FakeLLM:
+        def generate_answer(self, query, results):
+            raise LLMError("LLM unavailable")
+
+    state = {
+        "query": "transformers",
+        "results": [],
+    }
+
+    result = generate_answer(state, FakeLLM())
+
+    assert result["error"] == "Failed to generate answer"
+
+def test_parse_and_chunk_handles_pdf_parse_error():
+    class FakePDFProcessor:
+        def parse_pdf(self, pdf_path):
+            raise PDFParseError("Invalid PDF")
+
+    class FakeChunker:
+        def chunk(self, pages):
+            raise AssertionError("Chunker should not run")
+
+    state = {
+        "pdf_path": "invalid.pdf",
+    }
+
+    result = parse_and_chunk(
+        state,
+        FakePDFProcessor(),
+        FakeChunker(),
+    )
+
+    assert result["chunks"] == []
+    assert result["error"] == "Failed to parse PDF"
+
+def test_workflow_routes_to_error_when_pdf_parse_fails():
+    def parse_and_chunk(state: AgentState):
+        return {
+            "chunks": [],
+            "error": "Failed to parse PDF",
+        }
+
+    def route_after_chunking(state: AgentState):
+        if state.get("chunks"):
+            return "retrieve_chunks"
+
+        return "error"
+
+    def retrieve_chunks(state: AgentState):
+        return {"results": ["should-not-run"]}
+
+    def handle_error(state: AgentState):
+        return {"answer": state["error"]}
+
+    graph = StateGraph(AgentState)
+
+    graph.add_node("parse_and_chunk", parse_and_chunk)
+    graph.add_node("retrieve_chunks", retrieve_chunks)
+    graph.add_node("error", handle_error)
+
+    graph.add_edge(START, "parse_and_chunk")
+
+    graph.add_conditional_edges(
+        "parse_and_chunk",
+        route_after_chunking,
+        {
+            "retrieve_chunks": "retrieve_chunks",
+            "error": "error",
+        },
+    )
+
+    graph.add_edge("retrieve_chunks", END)
+    graph.add_edge("error", END)
+
+    workflow = graph.compile()
+
+    result = workflow.invoke({"query": "transformers"})
+
+    assert result["answer"] == "Failed to parse PDF"
+
+def test_process_query_handles_invalid_query():
+    class FakeQueryProcessor:
+        def process(self, query):
+            raise ValueError("query cannot be empty")
+
+    state = {"query": ""}
+
+    result = process_query(state, FakeQueryProcessor())
+
+    assert result["error"] == "query cannot be empty"

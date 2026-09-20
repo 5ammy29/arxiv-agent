@@ -2,17 +2,28 @@ from project.graph.state import AgentState
 from project.nodes.arxiv import ArxivClient, ArxivError
 from project.nodes.answer import AnswerBuilder
 from project.nodes.chunker import TextChunker
-from project.nodes.llm import OllamaLLM
-from project.nodes.pdf import PDFDownloadError, PDFProcessor
+from project.nodes.llm import LLMError, OllamaLLM
+from project.nodes.pdf import PDFDownloadError, PDFParseError, PDFProcessor
 from project.nodes.query import QueryProcessor
 from project.nodes.reranker import Reranker
 from project.nodes.retriever import Retriever
 from project.nodes.vector_store import VectorStore
 
 def process_query(state: AgentState, query_processor: QueryProcessor):
-    processed_query = query_processor.process(state["query"])
+    try:
+        processed_query = query_processor.process(state["query"])
+    except LLMError:
+        return {"error": "Failed to process query"}
+    except (TypeError, ValueError) as error:
+        return {"error": str(error)}
 
     return {"processed_query": processed_query}
+
+def route_after_query(state: AgentState):
+    if state.get("processed_query"):
+        return "search_arxiv"
+
+    return "error"
 
 def search_arxiv(state: AgentState, arxiv_client: ArxivClient):
     try:
@@ -44,7 +55,11 @@ def download_pdf(state: AgentState, pdf_processor: PDFProcessor):
     return {"pdf_path": str(pdf_path)}
 
 def parse_and_chunk(state: AgentState, pdf_processor: PDFProcessor, chunker: TextChunker):
-    pages = pdf_processor.parse_pdf(state["pdf_path"])
+    try:
+        pages = pdf_processor.parse_pdf(state["pdf_path"])
+    except PDFParseError:
+        return {"chunks": [], "error": "Failed to parse PDF"}
+
     chunks = chunker.chunk(pages)
 
     if not chunks:
@@ -69,7 +84,10 @@ def retrieve_chunks(state: AgentState, vector_store: VectorStore, retriever: Ret
 
 
 def generate_answer(state: AgentState, llm: OllamaLLM):
-    answer = llm.generate_answer(state["query"], state["results"])
+    try:
+        answer = llm.generate_answer(state["query"], state["results"])
+    except LLMError:
+        return {"error": "Failed to generate answer"}
 
     return {"answer": answer}
 
@@ -106,5 +124,11 @@ def route_after_retrieval(state: AgentState):
 def route_after_download(state: AgentState):
     if state.get("pdf_path"):
         return "parse_and_chunk"
+
+    return "error"
+
+def route_after_answer(state: AgentState):
+    if state.get("answer"):
+        return "build_answer"
 
     return "error"

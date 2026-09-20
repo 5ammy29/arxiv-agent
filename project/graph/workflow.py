@@ -8,6 +8,8 @@ from project.graph.nodes import (
     parse_and_chunk,
     process_query,
     retrieve_chunks,
+    route_after_query,
+    route_after_answer,
     route_after_search,
     search_arxiv,
     select_paper,
@@ -77,7 +79,14 @@ def build_workflow(
     graph.add_node("error", handle_error)
 
     graph.add_edge(START, "process_query")
-    graph.add_edge("process_query", "search_arxiv")
+    graph.add_conditional_edges(
+        "process_query",
+        route_after_query,
+        {
+            "search_arxiv": "search_arxiv",
+            "error": "error",
+        },
+    )
 
     graph.add_conditional_edges(
         "search_arxiv",
@@ -117,7 +126,14 @@ def build_workflow(
         },
     )
 
-    graph.add_edge("generate_answer", "build_answer")
+    graph.add_conditional_edges(
+        "generate_answer",
+        route_after_answer,
+        {
+            "build_answer": "build_answer",
+            "error": "error",
+        },
+    )
     graph.add_edge("build_answer", END)
     graph.add_edge("error", END)
 

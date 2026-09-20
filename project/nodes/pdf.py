@@ -7,6 +7,8 @@ from pathlib import Path
 class PDFDownloadError(Exception):
     pass
 
+class PDFParseError(Exception):
+    pass
 
 @dataclass
 class PDFPage:
@@ -35,13 +37,18 @@ class PDFProcessor:
         return pdf_path
 
     def parse_pdf(self, pdf_path: Path) -> list[PDFPage]:
-        document = pymupdf.open(pdf_path)
+        try:
+            document = pymupdf.open(pdf_path)
+        except Exception as error:
+            raise PDFParseError("Failed to parse PDF") from error
 
         pages = []
 
         try:
             for page_number, page in enumerate(document, start=1):
                 pages.append(PDFPage(page=page_number, text=page.get_text()))
+        except Exception as error:
+            raise PDFParseError("Failed to parse PDF") from error
         finally:
             document.close()
 
