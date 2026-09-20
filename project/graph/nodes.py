@@ -1,5 +1,6 @@
 from project.graph.state import AgentState
 from project.nodes.arxiv import ArxivClient
+from project.nodes.answer import AnswerBuilder
 from project.nodes.chunker import TextChunker
 from project.nodes.llm import OllamaLLM
 from project.nodes.pdf import PDFProcessor
@@ -62,3 +63,12 @@ def route_after_search(state: AgentState):
 
 def handle_error(state: AgentState):
     return {"answer": state.get("error", "No relevant papers were found.")}
+
+def build_answer(state: AgentState, answer_builder: AnswerBuilder):
+    answer = answer_builder.build(
+        state["answer"],
+        state["selected_paper"],
+        state["results"],
+    )
+
+    return {"answer": answer}

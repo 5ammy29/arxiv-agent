@@ -3,6 +3,8 @@ from project.nodes.arxiv import Paper
 from project.graph.state import AgentState
 from project.graph.workflow import build_workflow
 from langgraph.graph import END, START, StateGraph
+from project.nodes.chunker import TextChunk
+from project.nodes.vector_store import SearchResult
 
 def test_workflow_routes_to_error_when_no_papers():
     def search_arxiv(state: AgentState):
@@ -108,6 +110,7 @@ def test_workflow_contains_all_nodes():
         "parse_and_chunk",
         "retrieve_chunks",
         "generate_answer",
+        "build_answer",
         "error",
     }
 
@@ -149,9 +152,20 @@ def test_full_workflow_execution():
         def add_chunks(self, chunks):
             pass
 
+    fake_chunk = TextChunk(
+        chunk_id=0,
+        page=3,
+        text="Test evidence",
+    )
+
+    fake_result = SearchResult(
+        chunk=fake_chunk,
+        score=0.9,
+    )
+
     class FakeRetriever:
         def retrieve(self, query):
-            return ["result-1"]
+            return [fake_result]
 
     class FakeLLM:
         def generate_answer(self, query, results):
@@ -175,5 +189,11 @@ def test_full_workflow_execution():
     assert result["selected_paper"].arxiv_id == "1234.5678"
     assert result["pdf_path"] == "paper.pdf"
     assert result["chunks"] == ["chunk-1"]
-    assert result["results"] == ["result-1"]
-    assert result["answer"] == "final answer"
+    assert result["results"] == [fake_result]
+    assert "## Answer" in result["answer"]
+    assert "final answer" in result["answer"]
+    assert "## Evidence" in result["answer"]
+    assert "- Page 3" in result["answer"]
+    assert "## Source" in result["answer"]
+    assert "Test Paper" in result["answer"]
+    assert "arXiv: 1234.5678" in result["answer"]

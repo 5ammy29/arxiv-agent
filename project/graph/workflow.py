@@ -1,7 +1,6 @@
 from functools import partial
-
+from project.nodes.answer import AnswerBuilder
 from langgraph.graph import END, START, StateGraph
-
 from project.graph.nodes import (
     download_pdf,
     generate_answer,
@@ -12,6 +11,7 @@ from project.graph.nodes import (
     route_after_search,
     search_arxiv,
     select_paper,
+    build_answer,
 )
 from project.graph.state import AgentState
 from project.nodes.arxiv import ArxivClient
@@ -32,6 +32,7 @@ def build_workflow(
     vector_store=None,
     reranker=None,
     retriever=None,
+    answer_builder=None,
 ):
     if arxiv_client is None:
         arxiv_client = ArxivClient()
@@ -57,6 +58,9 @@ def build_workflow(
     if retriever is None:
         retriever = Retriever(vector_store, reranker=reranker)
 
+    if answer_builder is None:
+        answer_builder = AnswerBuilder()
+
     graph = StateGraph(AgentState)
 
     graph.add_node("process_query", partial(process_query, query_processor=query_processor))
@@ -66,6 +70,7 @@ def build_workflow(
     graph.add_node("parse_and_chunk", partial(parse_and_chunk, pdf_processor=pdf_processor, chunker=chunker))
     graph.add_node("retrieve_chunks", partial(retrieve_chunks, vector_store=vector_store, retriever=retriever))
     graph.add_node("generate_answer", partial(generate_answer, llm=llm))
+    graph.add_node("build_answer", partial(build_answer, answer_builder=answer_builder))
     graph.add_node("error", handle_error)
 
     graph.add_edge(START, "process_query")
@@ -84,7 +89,8 @@ def build_workflow(
     graph.add_edge("download_pdf", "parse_and_chunk")
     graph.add_edge("parse_and_chunk", "retrieve_chunks")
     graph.add_edge("retrieve_chunks", "generate_answer")
-    graph.add_edge("generate_answer", END)
+    graph.add_edge("generate_answer", "build_answer")
+    graph.add_edge("build_answer", END)
     graph.add_edge("error", END)
 
     return graph.compile()

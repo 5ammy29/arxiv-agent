@@ -57,21 +57,25 @@ Question:
 
         for result in results:
             context.append(
-                f"[Page {result.chunk.page}]\n{result.chunk.text}"
+                f"[Passage | Page {result.chunk.page}]\n{result.chunk.text}"
             )
 
         context_text = "\n\n".join(context)
 
-        prompt = f"""Answer the following research question using only the provided paper passages.
+        prompt = f"""You are answering a research question using only passages retrieved from an academic paper.
 
-If the passages do not contain enough information to answer the question, say so clearly.
-Do not invent facts.
-Mention relevant page numbers when appropriate.
+Follow these rules:
+- Use only information supported by the provided passages.
+- Do not use outside knowledge.
+- Do not invent facts, numbers, methods, results, or conclusions.
+- If the passages do not contain enough information to answer the question, say that the available evidence is insufficient.
+- Cite supporting evidence using the page numbers provided in the passages.
+- Give a concise and research-focused answer.
 
 Question:
 {query}
 
-Paper passages:
+Retrieved passages:
 {context_text}
 """
 
