@@ -1,8 +1,6 @@
 from datetime import datetime
-
 import arxiv
 from pydantic import BaseModel
-
 
 class Paper(BaseModel):
     arxiv_id: str
@@ -34,7 +32,6 @@ class ArxivClient:
 
         try:
             results = self.client.results(search)
-
             normalized_results = []
 
             for result in results:
@@ -65,9 +62,7 @@ class ArxivClient:
 
     def search_by_id(self, identifier: str) -> Paper | None:
         arxiv_id = self._extract_arxiv_id(identifier)
-
         search = arxiv.Search(id_list=[arxiv_id], max_results=1)
-
         results = list(self.client.results(search))
 
         if not results:
@@ -89,4 +84,3 @@ class ArxivClient:
             identifier = identifier[:-4]
 
         return identifier
-    

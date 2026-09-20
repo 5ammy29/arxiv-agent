@@ -13,11 +13,7 @@ class OllamaLLM:
     ):
         self.model = model
         self.base_url = base_url.rstrip("/")
-
-        if session is None:
-            session = requests
-
-        self.session = session
+        self.session = requests if session is None else session
 
     def generate(self, prompt: str) -> str:
         try:

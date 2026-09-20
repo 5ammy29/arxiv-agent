@@ -29,7 +29,11 @@ class VectorStore:
         for chunk in chunks:
             texts.append(chunk.text)
 
-        embeddings = self.model.encode(texts, convert_to_numpy=True, normalize_embeddings=True)
+        embeddings = self.model.encode(
+            texts,
+            convert_to_numpy=True,
+            normalize_embeddings=True,
+        )
         embeddings = embeddings.astype(np.float32)
 
         if self.index is None:
@@ -48,17 +52,25 @@ class VectorStore:
         if top_k <= 0:
             raise ValueError("top_k must be positive")
 
-        query_embedding = self.model.encode([query], convert_to_numpy=True, normalize_embeddings=True)
+        query_embedding = self.model.encode(
+            [query],
+            convert_to_numpy=True,
+            normalize_embeddings=True,
+        )
         query_embedding = query_embedding.astype(np.float32)
 
         top_k = min(top_k, len(self.chunks))
-
         distances, indices = self.index.search(query_embedding, top_k)
 
         results = []
 
         for score, index in zip(distances[0], indices[0]):
             if index != -1:
-                results.append(SearchResult(chunk=self.chunks[index], score=float(score)))
+                results.append(
+                    SearchResult(
+                        chunk=self.chunks[index],
+                        score=float(score),
+                    )
+                )
 
         return results

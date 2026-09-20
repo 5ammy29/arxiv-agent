@@ -1,8 +1,6 @@
 import re
 from dataclasses import dataclass
-
 from project.nodes.pdf import PDFPage
-
 
 @dataclass
 class TextChunk:
@@ -10,13 +8,8 @@ class TextChunk:
     page: int
     text: str
 
-
 class TextChunker:
-    def __init__(
-        self,
-        chunk_size: int = 1500,
-        chunk_overlap: int = 200,
-    ):
+    def __init__(self, chunk_size: int = 1500, chunk_overlap: int = 200):
         if chunk_size <= 0:
             raise ValueError("chunk_size must be positive")
 
@@ -38,9 +31,7 @@ class TextChunker:
             if not text:
                 continue
 
-            page_chunks = self._chunk_text(text)
-
-            for text_chunk in page_chunks:
+            for text_chunk in self._chunk_text(text):
                 chunks.append(
                     TextChunk(
                         chunk_id=len(chunks),
@@ -75,7 +66,6 @@ class TextChunker:
                 split_at = end
 
             chunks.append(text[start:split_at].strip())
-
             start = split_at - self.chunk_overlap
 
         return chunks

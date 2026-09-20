@@ -18,13 +18,21 @@ def test_answer_builder_includes_answer_source_and_evidence():
     )
 
     results = [
-        SearchResult(chunk=TextChunk(chunk_id=0, page=3, text="Evidence one"), score=0.9),
-        SearchResult(chunk=TextChunk(chunk_id=1, page=3, text="Evidence two"), score=0.8),
-        SearchResult(chunk=TextChunk(chunk_id=2, page=7, text="Evidence three"), score=0.7),
+        SearchResult(
+            chunk=TextChunk(chunk_id=0, page=3, text="Evidence one"),
+            score=0.9,
+        ),
+        SearchResult(
+            chunk=TextChunk(chunk_id=1, page=3, text="Evidence two"),
+            score=0.8,
+        ),
+        SearchResult(
+            chunk=TextChunk(chunk_id=2, page=7, text="Evidence three"),
+            score=0.7,
+        ),
     ]
 
     builder = AnswerBuilder()
-
     result = builder.build("Final answer.", paper, results)
 
     assert "## Answer" in result
@@ -51,7 +59,6 @@ def test_answer_builder_handles_no_results():
     )
 
     builder = AnswerBuilder()
-
     result = builder.build("Final answer.", paper, [])
 
     assert "## Answer" in result

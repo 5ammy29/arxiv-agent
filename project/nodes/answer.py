@@ -3,13 +3,7 @@ from project.nodes.vector_store import SearchResult
 
 class AnswerBuilder:
     def build(self, answer: str, paper: Paper, results: list[SearchResult]) -> str:
-        lines = []
-
-        lines.append("## Answer")
-        lines.append(answer)
-        lines.append("")
-        lines.append("## Evidence")
-
+        lines = ["## Answer", answer, "", "## Evidence"]
         pages = []
 
         for result in results:
@@ -21,9 +15,11 @@ class AnswerBuilder:
         for page in pages:
             lines.append(f"- Page {page}")
 
-        lines.append("")
-        lines.append("## Source")
-        lines.append(paper.title)
-        lines.append(f"arXiv: {paper.arxiv_id}")
+        lines.extend([
+            "",
+            "## Source",
+            paper.title,
+            f"arXiv: {paper.arxiv_id}",
+        ])
 
         return "\n".join(lines)

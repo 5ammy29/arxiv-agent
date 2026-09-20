@@ -1,13 +1,13 @@
 from datetime import datetime
 from project.nodes.arxiv import Paper
+from project.nodes.llm import LLMError
 from project.graph.state import AgentState
+from project.nodes.chunker import TextChunk
+from project.nodes.pdf import PDFParseError
 from project.graph.workflow import build_workflow
 from langgraph.graph import END, START, StateGraph
-from project.nodes.chunker import TextChunk
-from project.nodes.vector_store import SearchResult
-from project.nodes.llm import LLMError
 from project.graph.nodes import generate_answer, parse_and_chunk, process_query
-from project.nodes.pdf import PDFParseError
+from project.nodes.vector_store import SearchResult
 
 def test_workflow_routes_to_error_when_no_papers():
     def search_arxiv(state: AgentState):
@@ -46,7 +46,6 @@ def test_workflow_routes_to_error_when_no_papers():
     graph.add_edge("error", END)
 
     workflow = graph.compile()
-
     result = workflow.invoke({"query": "transformers"})
 
     assert result["answer"] == "No papers found for the query"
@@ -88,7 +87,6 @@ def test_workflow_routes_to_select_paper_when_papers_are_found():
     graph.add_edge("error", END)
 
     workflow = graph.compile()
-
     result = workflow.invoke({"query": "transformers"})
 
     assert result["selected_paper"] == "paper-1"
@@ -244,7 +242,6 @@ def test_workflow_routes_to_error_when_no_chunks():
     graph.add_edge("error", END)
 
     workflow = graph.compile()
-
     result = workflow.invoke({"query": "transformers"})
 
     assert result["answer"] == "No usable text was found in the paper"
@@ -289,7 +286,6 @@ def test_workflow_routes_to_error_when_no_results():
     graph.add_edge("error", END)
 
     workflow = graph.compile()
-
     result = workflow.invoke({"query": "transformers"})
 
     assert result["answer"] == "No relevant information was found in the paper"
@@ -331,7 +327,6 @@ def test_workflow_routes_to_error_when_pdf_download_fails():
     graph.add_edge("error", END)
 
     workflow = graph.compile()
-
     result = workflow.invoke({"query": "transformers"})
 
     assert result["answer"] == "Failed to download PDF for 1234.5678"
@@ -376,7 +371,6 @@ def test_workflow_routes_to_error_when_arxiv_search_fails():
     graph.add_edge("error", END)
 
     workflow = graph.compile()
-
     result = workflow.invoke({"query": "transformers"})
 
     assert result["answer"] == "Failed to search arXiv"
@@ -418,7 +412,6 @@ def test_workflow_routes_to_error_when_query_processing_fails():
     graph.add_edge("error", END)
 
     workflow = graph.compile()
-
     result = workflow.invoke({"query": "transformers"})
 
     assert result["answer"] == "Failed to process query"
@@ -460,7 +453,6 @@ def test_workflow_routes_to_error_when_answer_generation_fails():
     graph.add_edge("error", END)
 
     workflow = graph.compile()
-
     result = workflow.invoke({"query": "transformers"})
 
     assert result["answer"] == "Failed to generate answer"
@@ -553,7 +545,6 @@ def test_workflow_routes_to_error_when_pdf_parse_fails():
     graph.add_edge("error", END)
 
     workflow = graph.compile()
-
     result = workflow.invoke({"query": "transformers"})
 
     assert result["answer"] == "Failed to parse PDF"

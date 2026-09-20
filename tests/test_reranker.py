@@ -15,17 +15,23 @@ class FakeCrossEncoder:
         return scores
 
 def create_results():
-    chunks = []
+    chunks = [
+        TextChunk(
+            chunk_id=0,
+            page=1,
+            text="The model uses a Transformer architecture.",
+        ),
+        TextChunk(
+            chunk_id=1,
+            page=2,
+            text="The experiment uses a medical image dataset.",
+        ),
+    ]
 
-    chunks.append(TextChunk(chunk_id=0, page=1, text="The model uses a Transformer architecture."))
-    chunks.append(TextChunk(chunk_id=1, page=2, text="The experiment uses a medical image dataset."))
-
-    results = []
-
-    results.append(SearchResult(chunk=chunks[0], score=0.91))
-    results.append(SearchResult(chunk=chunks[1], score=0.72))
-
-    return results
+    return [
+        SearchResult(chunk=chunks[0], score=0.91),
+        SearchResult(chunk=chunks[1], score=0.72),
+    ]
 
 def test_reranker_returns_empty_results():
     reranker = Reranker(model=FakeCrossEncoder())
@@ -36,7 +42,6 @@ def test_reranker_returns_empty_results():
 
 def test_reranker_ranks_results():
     reranker = Reranker(model=FakeCrossEncoder())
-
     results = create_results()
 
     reranked = reranker.rerank("What is discussed?", results)
@@ -47,7 +52,6 @@ def test_reranker_ranks_results():
 
 def test_reranker_preserves_retrieval_scores():
     reranker = Reranker(model=FakeCrossEncoder())
-
     results = create_results()
 
     reranked = reranker.rerank("What is discussed?", results)
@@ -57,7 +61,6 @@ def test_reranker_preserves_retrieval_scores():
 
 def test_reranker_adds_rerank_scores():
     reranker = Reranker(model=FakeCrossEncoder())
-
     results = create_results()
 
     reranked = reranker.rerank("What is discussed?", results)

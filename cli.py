@@ -8,9 +8,7 @@ def run_query(workflow, query, paper_or_topic):
                 "paper": paper_or_topic,
             })
         else:
-            result = workflow.invoke({
-                "query": query,
-            })
+            result = workflow.invoke({"query": query})
     except KeyboardInterrupt:
         print("\nOperation cancelled.")
         return
@@ -18,14 +16,12 @@ def run_query(workflow, query, paper_or_topic):
     answer = result.get("answer")
 
     if answer:
-        print()
-        print(answer)
+        print(f"\n{answer}")
     else:
         print("\nNo answer was generated.")
 
 def interactive_mode(workflow):
-    print()
-    print("arXiv Research Agent")
+    print("\narXiv Research Agent")
 
     while True:
         try:
@@ -59,10 +55,7 @@ def interactive_mode(workflow):
 def is_arxiv_identifier(value):
     value = value.strip()
 
-    if "/abs/" in value or "/pdf/" in value:
-        return True
-
-    if value.endswith(".pdf"):
+    if "/abs/" in value or "/pdf/" in value or value.endswith(".pdf"):
         return True
 
     parts = value.split("/")

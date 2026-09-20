@@ -1,7 +1,7 @@
 import re
 from project.graph.state import AgentState
-from project.nodes.arxiv import ArxivClient, ArxivError
 from project.nodes.answer import AnswerBuilder
+from project.nodes.arxiv import ArxivClient, ArxivError
 from project.nodes.chunker import TextChunker
 from project.nodes.llm import LLMError, OllamaLLM
 from project.nodes.pdf import PDFDownloadError, PDFParseError, PDFProcessor
@@ -70,7 +70,11 @@ def download_pdf(state: AgentState, pdf_processor: PDFProcessor):
 
     return {"pdf_path": str(pdf_path)}
 
-def parse_and_chunk(state: AgentState, pdf_processor: PDFProcessor, chunker: TextChunker):
+def parse_and_chunk(
+    state: AgentState,
+    pdf_processor: PDFProcessor,
+    chunker: TextChunker,
+):
     try:
         pages = pdf_processor.parse_pdf(state["pdf_path"])
     except PDFParseError:
@@ -83,8 +87,11 @@ def parse_and_chunk(state: AgentState, pdf_processor: PDFProcessor, chunker: Tex
 
     return {"chunks": chunks}
 
-
-def retrieve_chunks(state: AgentState, vector_store: VectorStore, retriever: Retriever):
+def retrieve_chunks(
+    state: AgentState,
+    vector_store: VectorStore,
+    retriever: Retriever,
+):
     vector_store.reset()
     vector_store.add_chunks(state["chunks"])
 
@@ -97,7 +104,6 @@ def retrieve_chunks(state: AgentState, vector_store: VectorStore, retriever: Ret
         }
 
     return {"results": results}
-
 
 def generate_answer(state: AgentState, llm: OllamaLLM):
     try:

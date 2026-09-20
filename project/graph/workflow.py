@@ -1,25 +1,25 @@
 from functools import partial
-from project.nodes.answer import AnswerBuilder
 from langgraph.graph import END, START, StateGraph
 from project.graph.nodes import (
+    build_answer,
     download_pdf,
     generate_answer,
     handle_error,
     parse_and_chunk,
     process_query,
     retrieve_chunks,
-    route_after_query,
     route_after_answer,
+    route_after_chunking,
+    route_after_download,
+    route_after_query,
+    route_after_retrieval,
     route_after_search,
     search_arxiv,
-    select_paper,
-    build_answer,
-    route_after_chunking,
-    route_after_retrieval,
-    route_after_download,
     search_paper,
+    select_paper,
 )
 from project.graph.state import AgentState
+from project.nodes.answer import AnswerBuilder
 from project.nodes.arxiv import ArxivClient
 from project.nodes.chunker import TextChunker
 from project.nodes.llm import OllamaLLM
@@ -69,18 +69,51 @@ def build_workflow(
 
     graph = StateGraph(AgentState)
 
-    graph.add_node("process_query", partial(process_query, query_processor=query_processor))
-    graph.add_node("search_arxiv", partial(search_arxiv, arxiv_client=arxiv_client))
-    graph.add_node("search_paper", partial(search_paper, arxiv_client=arxiv_client))
+    graph.add_node(
+        "process_query",
+        partial(process_query, query_processor=query_processor),
+    )
+    graph.add_node(
+        "search_arxiv",
+        partial(search_arxiv, arxiv_client=arxiv_client),
+    )
+    graph.add_node(
+        "search_paper",
+        partial(search_paper, arxiv_client=arxiv_client),
+    )
     graph.add_node("select_paper", select_paper)
-    graph.add_node("download_pdf", partial(download_pdf, pdf_processor=pdf_processor))
-    graph.add_node("parse_and_chunk", partial(parse_and_chunk, pdf_processor=pdf_processor, chunker=chunker))
-    graph.add_node("retrieve_chunks", partial(retrieve_chunks, vector_store=vector_store, retriever=retriever))
-    graph.add_node("generate_answer", partial(generate_answer, llm=llm))
-    graph.add_node("build_answer", partial(build_answer, answer_builder=answer_builder))
+    graph.add_node(
+        "download_pdf",
+        partial(download_pdf, pdf_processor=pdf_processor),
+    )
+    graph.add_node(
+        "parse_and_chunk",
+        partial(
+            parse_and_chunk,
+            pdf_processor=pdf_processor,
+            chunker=chunker,
+        ),
+    )
+    graph.add_node(
+        "retrieve_chunks",
+        partial(
+            retrieve_chunks,
+            vector_store=vector_store,
+            retriever=retriever,
+        ),
+    )
+    graph.add_node(
+        "generate_answer",
+        partial(generate_answer, llm=llm),
+    )
+    graph.add_node(
+        "build_answer",
+        partial(build_answer, answer_builder=answer_builder),
+    )
     graph.add_node("error", handle_error)
 
     graph.add_edge(START, "process_query")
+
     graph.add_conditional_edges(
         "process_query",
         route_after_query,
@@ -146,6 +179,7 @@ def build_workflow(
             "error": "error",
         },
     )
+
     graph.add_edge("build_answer", END)
     graph.add_edge("error", END)
 

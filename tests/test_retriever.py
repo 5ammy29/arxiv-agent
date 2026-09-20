@@ -11,24 +11,34 @@ class FakeVectorStore:
         self.query = query
         self.top_k = top_k
 
-        chunks = []
+        chunks = [
+            TextChunk(
+                chunk_id=0,
+                page=1,
+                text="The model uses a Transformer architecture.",
+            ),
+            TextChunk(
+                chunk_id=1,
+                page=2,
+                text="The dataset contains 50,000 samples.",
+            ),
+        ]
 
-        chunks.append(TextChunk(chunk_id=0, page=1, text="The model uses a Transformer architecture."))
-        chunks.append(TextChunk(chunk_id=1, page=2, text="The dataset contains 50,000 samples."))
-
-        results = []
-
-        results.append(SearchResult(chunk=chunks[0], score=0.91))
-        results.append(SearchResult(chunk=chunks[1], score=0.72))
-
-        return results
+        return [
+            SearchResult(chunk=chunks[0], score=0.91),
+            SearchResult(chunk=chunks[1], score=0.72),
+        ]
 
 class FakeReranker:
     def __init__(self):
         self.query = None
         self.results = None
 
-    def rerank(self, query: str, results: list[SearchResult]) -> list[SearchResult]:
+    def rerank(
+        self,
+        query: str,
+        results: list[SearchResult],
+    ) -> list[SearchResult]:
         self.query = query
         self.results = results
 
@@ -65,7 +75,10 @@ def test_retrieve_passes_top_k():
     vector_store = FakeVectorStore()
     retriever = Retriever(vector_store)
 
-    retriever.retrieve("What architecture does the model use?", top_k=3)
+    retriever.retrieve(
+        "What architecture does the model use?",
+        top_k=3,
+    )
 
     assert vector_store.top_k == 3
 
@@ -83,7 +96,10 @@ def test_retrieve_filters_by_similarity_threshold():
     vector_store = FakeVectorStore()
     retriever = Retriever(vector_store)
 
-    results = retriever.retrieve("What architecture does the model use?", similarity_threshold=0.8)
+    results = retriever.retrieve(
+        "What architecture does the model use?",
+        similarity_threshold=0.8,
+    )
 
     assert len(results) == 1
     assert results[0].score == 0.91
@@ -92,7 +108,10 @@ def test_retrieve_includes_result_at_similarity_threshold():
     vector_store = FakeVectorStore()
     retriever = Retriever(vector_store)
 
-    results = retriever.retrieve("What architecture does the model use?", similarity_threshold=0.91)
+    results = retriever.retrieve(
+        "What architecture does the model use?",
+        similarity_threshold=0.91,
+    )
 
     assert len(results) == 1
     assert results[0].score == 0.91
@@ -101,7 +120,10 @@ def test_retrieve_returns_no_results_below_threshold():
     vector_store = FakeVectorStore()
     retriever = Retriever(vector_store)
 
-    results = retriever.retrieve("What architecture does the model use?", similarity_threshold=0.95)
+    results = retriever.retrieve(
+        "What architecture does the model use?",
+        similarity_threshold=0.95,
+    )
 
     assert results == []
 
@@ -110,7 +132,10 @@ def test_retrieve_rejects_invalid_similarity_threshold():
     retriever = Retriever(vector_store)
 
     try:
-        retriever.retrieve("What architecture does the model use?", similarity_threshold=1.1)
+        retriever.retrieve(
+            "What architecture does the model use?",
+            similarity_threshold=1.1,
+        )
         assert False
     except ValueError:
         pass
@@ -120,7 +145,10 @@ def test_retrieve_rejects_negative_invalid_similarity_threshold():
     retriever = Retriever(vector_store)
 
     try:
-        retriever.retrieve("What architecture does the model use?", similarity_threshold=-1.1)
+        retriever.retrieve(
+            "What architecture does the model use?",
+            similarity_threshold=-1.1,
+        )
         assert False
     except ValueError:
         pass
@@ -150,7 +178,10 @@ def test_retrieve_filters_results_before_reranking():
     reranker = FakeReranker()
     retriever = Retriever(vector_store, reranker=reranker)
 
-    results = retriever.retrieve("What architecture does the model use?", similarity_threshold=0.8)
+    results = retriever.retrieve(
+        "What architecture does the model use?",
+        similarity_threshold=0.8,
+    )
 
     assert len(reranker.results) == 1
     assert reranker.results[0].score == 0.91
