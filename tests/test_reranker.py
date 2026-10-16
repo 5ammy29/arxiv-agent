@@ -2,6 +2,7 @@ from project.nodes.chunker import TextChunk
 from project.nodes.reranker import Reranker
 from project.nodes.vector_store import SearchResult
 
+
 class FakeCrossEncoder:
     def predict(self, pairs):
         scores = []
@@ -13,6 +14,7 @@ class FakeCrossEncoder:
                 scores.append(0.9)
 
         return scores
+
 
 def create_results():
     chunks = [
@@ -33,12 +35,14 @@ def create_results():
         SearchResult(chunk=chunks[1], score=0.72),
     ]
 
+
 def test_reranker_returns_empty_results():
     reranker = Reranker(model=FakeCrossEncoder())
 
     results = reranker.rerank("What is the model?", [])
 
     assert results == []
+
 
 def test_reranker_ranks_results():
     reranker = Reranker(model=FakeCrossEncoder())
@@ -50,6 +54,7 @@ def test_reranker_ranks_results():
     assert reranked[0].chunk.chunk_id == 1
     assert reranked[1].chunk.chunk_id == 0
 
+
 def test_reranker_preserves_retrieval_scores():
     reranker = Reranker(model=FakeCrossEncoder())
     results = create_results()
@@ -58,6 +63,7 @@ def test_reranker_preserves_retrieval_scores():
 
     assert reranked[0].score == 0.72
     assert reranked[1].score == 0.91
+
 
 def test_reranker_adds_rerank_scores():
     reranker = Reranker(model=FakeCrossEncoder())

@@ -1,18 +1,23 @@
-import pymupdf
-import requests
 from dataclasses import dataclass
 from pathlib import Path
+
+import pymupdf
+import requests
+
 
 class PDFDownloadError(Exception):
     pass
 
+
 class PDFParseError(Exception):
     pass
+
 
 @dataclass
 class PDFPage:
     page: int
     text: str
+
 
 class PDFProcessor:
     def __init__(self, output_dir: str = "data/papers"):
@@ -44,12 +49,7 @@ class PDFProcessor:
 
         try:
             for page_number, page in enumerate(document, start=1):
-                pages.append(
-                    PDFPage(
-                        page=page_number,
-                        text=page.get_text(),
-                    )
-                )
+                pages.append(PDFPage(page=page_number, text=page.get_text()))
         except Exception as error:
             raise PDFParseError("Failed to parse PDF") from error
         finally:

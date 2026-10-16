@@ -1,7 +1,10 @@
-import pytest
 from datetime import datetime
 from unittest.mock import MagicMock
+
+import pytest
+
 from project.nodes.arxiv import ArxivClient, ArxivError, Paper
+
 
 def create_mock_result():
     result = MagicMock()
@@ -21,6 +24,7 @@ def create_mock_result():
 
     return result
 
+
 def test_search_by_topic_returns_papers():
     client = ArxivClient()
     mock_result = create_mock_result()
@@ -34,11 +38,13 @@ def test_search_by_topic_returns_papers():
     assert papers[0].arxiv_id == "2401.12345"
     assert papers[0].title == "Test Paper"
 
+
 def test_search_by_topic_rejects_empty_query():
     client = ArxivClient()
 
     with pytest.raises(ValueError, match="search query cannot be empty"):
         client.search_by_topic("   ")
+
 
 def test_search_by_topic_respects_max_results():
     client = ArxivClient()
@@ -54,6 +60,7 @@ def test_search_by_topic_respects_max_results():
 
     assert len(papers) == 3
 
+
 def test_search_by_id_returns_paper():
     client = ArxivClient()
     mock_result = create_mock_result()
@@ -66,6 +73,7 @@ def test_search_by_id_returns_paper():
     assert paper.arxiv_id == "2401.12345"
     assert paper.title == "Test Paper"
 
+
 def test_search_by_id_returns_none_when_not_found():
     client = ArxivClient()
 
@@ -74,6 +82,7 @@ def test_search_by_id_returns_none_when_not_found():
     paper = client.search_by_id("9999.99999")
 
     assert paper is None
+
 
 def test_search_by_id_accepts_abs_url():
     client = ArxivClient()
@@ -86,6 +95,7 @@ def test_search_by_id_accepts_abs_url():
     assert paper is not None
     assert paper.arxiv_id == "2401.12345"
 
+
 def test_search_by_id_accepts_pdf_url():
     client = ArxivClient()
     mock_result = create_mock_result()
@@ -97,6 +107,7 @@ def test_search_by_id_accepts_pdf_url():
     assert paper is not None
     assert paper.arxiv_id == "2401.12345"
 
+
 def test_extract_arxiv_id():
     assert ArxivClient._extract_arxiv_id("2401.12345") == "2401.12345"
     assert (
@@ -107,6 +118,7 @@ def test_extract_arxiv_id():
         ArxivClient._extract_arxiv_id("https://arxiv.org/pdf/2401.12345.pdf")
         == "2401.12345"
     )
+
 
 def test_normalize_result():
     client = ArxivClient()
@@ -123,6 +135,7 @@ def test_normalize_result():
     assert paper.url == "https://arxiv.org/abs/2401.12345"
     assert paper.pdf_url == "https://arxiv.org/pdf/2401.12345"
     assert paper.categories == ["cs.AI", "cs.LG"]
+
 
 def test_search_by_topic_raises_arxiv_error():
     class FakeClient:

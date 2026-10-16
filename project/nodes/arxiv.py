@@ -1,6 +1,8 @@
 from datetime import datetime
+
 import arxiv
 from pydantic import BaseModel
+
 
 class Paper(BaseModel):
     arxiv_id: str
@@ -13,8 +15,10 @@ class Paper(BaseModel):
     pdf_url: str
     categories: list[str]
 
+
 class ArxivError(Exception):
     pass
+
 
 class ArxivClient:
     def __init__(self):

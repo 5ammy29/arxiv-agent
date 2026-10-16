@@ -2,6 +2,7 @@ from project.nodes.chunker import TextChunk
 from project.nodes.llm import LLMError, OllamaLLM
 from project.nodes.vector_store import SearchResult
 
+
 class FakeResponse:
     def __init__(self, data):
         self.data = data
@@ -11,6 +12,7 @@ class FakeResponse:
 
     def json(self):
         return self.data
+
 
 class FakeRequests:
     def __init__(self, response):
@@ -24,6 +26,7 @@ class FakeRequests:
 
         return self.response
 
+
 def test_generate_returns_response():
     fake_requests = FakeRequests(
         FakeResponse({"response": "Generated answer"})
@@ -36,6 +39,7 @@ def test_generate_returns_response():
     assert fake_requests.payload["model"] == "qwen2.5:3b"
     assert fake_requests.payload["stream"] is False
 
+
 def test_generate_raises_when_response_is_missing():
     fake_requests = FakeRequests(FakeResponse({}))
     llm = OllamaLLM(session=fake_requests)
@@ -45,6 +49,7 @@ def test_generate_raises_when_response_is_missing():
         assert False
     except LLMError:
         pass
+
 
 def test_rewrite_query():
     class FakeLLM(OllamaLLM):
@@ -58,6 +63,7 @@ def test_rewrite_query():
     )
 
     assert result == "model performance evaluation results"
+
 
 def test_generate_answer():
     class FakeLLM(OllamaLLM):
@@ -86,6 +92,7 @@ def test_generate_answer():
     )
 
     assert answer == "The model achieved strong performance."
+
 
 def test_generate_answer_with_no_results():
     llm = OllamaLLM()

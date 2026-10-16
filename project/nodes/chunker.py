@@ -1,12 +1,15 @@
 import re
 from dataclasses import dataclass
+
 from project.nodes.pdf import PDFPage
+
 
 @dataclass
 class TextChunk:
     chunk_id: int
     page: int
     text: str
+
 
 class TextChunker:
     def __init__(self, chunk_size: int = 1500, chunk_overlap: int = 200):

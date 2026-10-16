@@ -1,6 +1,7 @@
 from project.nodes.chunker import TextChunk
 from project.nodes.vector_store import SearchResult, VectorStore
 
+
 def create_chunks():
     return [
         TextChunk(
@@ -20,12 +21,14 @@ def create_chunks():
         ),
     ]
 
+
 def test_empty_store_returns_no_results():
     store = VectorStore()
 
     results = store.search("What model is used?")
 
     assert results == []
+
 
 def test_add_chunks():
     store = VectorStore()
@@ -36,6 +39,7 @@ def test_add_chunks():
     assert store.index is not None
     assert store.index.ntotal == 3
     assert len(store.chunks) == 3
+
 
 def test_search_returns_chunks():
     store = VectorStore()
@@ -55,6 +59,7 @@ def test_search_returns_chunks():
         assert isinstance(result.chunk, TextChunk)
         assert isinstance(result.score, float)
 
+
 def test_search_returns_most_relevant_chunk():
     store = VectorStore()
     chunks = create_chunks()
@@ -68,6 +73,7 @@ def test_search_returns_most_relevant_chunk():
 
     assert len(results) == 1
     assert results[0].chunk.chunk_id == 2
+
 
 def test_search_returns_similarity_score():
     store = VectorStore()
@@ -84,6 +90,7 @@ def test_search_returns_similarity_score():
     assert results[0].score >= -1.0
     assert results[0].score <= 1.0
 
+
 def test_top_k_limits_results():
     store = VectorStore()
     chunks = create_chunks()
@@ -96,6 +103,7 @@ def test_top_k_limits_results():
     )
 
     assert len(results) == 2
+
 
 def test_top_k_cannot_be_zero():
     store = VectorStore()
@@ -112,6 +120,7 @@ def test_top_k_cannot_be_zero():
     except ValueError:
         pass
 
+
 def test_top_k_cannot_be_negative():
     store = VectorStore()
     chunks = create_chunks()
@@ -127,6 +136,7 @@ def test_top_k_cannot_be_negative():
     except ValueError:
         pass
 
+
 def test_top_k_larger_than_chunk_count():
     store = VectorStore()
     chunks = create_chunks()
@@ -140,6 +150,7 @@ def test_top_k_larger_than_chunk_count():
 
     assert len(results) == 3
 
+
 def test_empty_chunks_are_ignored():
     store = VectorStore()
 
@@ -147,6 +158,7 @@ def test_empty_chunks_are_ignored():
 
     assert store.index is None
     assert store.chunks == []
+
 
 def test_search_result_has_no_rerank_score_initially():
     store = VectorStore()
@@ -160,6 +172,7 @@ def test_search_result_has_no_rerank_score_initially():
     )
 
     assert results[0].rerank_score is None
+
 
 def test_reset_clears_index_and_chunks():
     store = VectorStore.__new__(VectorStore)

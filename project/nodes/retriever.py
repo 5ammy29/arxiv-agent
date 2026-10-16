@@ -2,6 +2,7 @@ from project.nodes.query import QueryProcessor
 from project.nodes.reranker import Reranker
 from project.nodes.vector_store import SearchResult, VectorStore
 
+
 class Retriever:
     def __init__(
         self,
@@ -23,9 +24,7 @@ class Retriever:
 
         if similarity_threshold is not None:
             if similarity_threshold < -1.0 or similarity_threshold > 1.0:
-                raise ValueError(
-                    "similarity_threshold must be between -1.0 and 1.0"
-                )
+                raise ValueError("similarity_threshold must be between -1.0 and 1.0")
 
         results = self.vector_store.search(processed_query, top_k=top_k)
 

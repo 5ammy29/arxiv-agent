@@ -1,5 +1,6 @@
 from project.graph.workflow import build_workflow
 
+
 def run_query(workflow, query, paper_or_topic):
     try:
         if is_arxiv_identifier(paper_or_topic):
@@ -19,6 +20,7 @@ def run_query(workflow, query, paper_or_topic):
         print(f"\n{answer}")
     else:
         print("\nNo answer was generated.")
+
 
 def interactive_mode(workflow):
     print("\narXiv Research Agent")
@@ -52,6 +54,7 @@ def interactive_mode(workflow):
 
         run_query(workflow, query, paper_or_topic)
 
+
 def is_arxiv_identifier(value):
     value = value.strip()
 
@@ -65,9 +68,11 @@ def is_arxiv_identifier(value):
 
     return value.replace(".", "").isdigit()
 
+
 def main():
     workflow = build_workflow()
     interactive_mode(workflow)
+
 
 if __name__ == "__main__":
     main()

@@ -1,14 +1,18 @@
+from dataclasses import dataclass
+
 import faiss
 import numpy as np
-from dataclasses import dataclass
-from project.nodes.chunker import TextChunk
 from sentence_transformers import SentenceTransformer
+
+from project.nodes.chunker import TextChunk
+
 
 @dataclass
 class SearchResult:
     chunk: TextChunk
     score: float
     rerank_score: float | None = None
+
 
 class VectorStore:
     def __init__(self, model_name: str = "BAAI/bge-base-en-v1.5"):

@@ -1,13 +1,16 @@
 from datetime import datetime
-from project.nodes.arxiv import Paper
-from project.nodes.llm import LLMError
-from project.graph.state import AgentState
-from project.nodes.chunker import TextChunk
-from project.nodes.pdf import PDFParseError
-from project.graph.workflow import build_workflow
+
 from langgraph.graph import END, START, StateGraph
+
 from project.graph.nodes import generate_answer, parse_and_chunk, process_query
+from project.graph.state import AgentState
+from project.graph.workflow import build_workflow
+from project.nodes.arxiv import Paper
+from project.nodes.chunker import TextChunk
+from project.nodes.llm import LLMError
+from project.nodes.pdf import PDFParseError
 from project.nodes.vector_store import SearchResult
+
 
 def test_workflow_routes_to_error_when_no_papers():
     def search_arxiv(state: AgentState):
@@ -50,6 +53,7 @@ def test_workflow_routes_to_error_when_no_papers():
 
     assert result["answer"] == "No papers found for the query"
 
+
 def test_workflow_routes_to_select_paper_when_papers_are_found():
     def search_arxiv(state: AgentState):
         return {"papers": ["paper-1"]}
@@ -91,6 +95,7 @@ def test_workflow_routes_to_select_paper_when_papers_are_found():
 
     assert result["selected_paper"] == "paper-1"
 
+
 def test_workflow_contains_all_nodes():
     workflow = build_workflow(
         arxiv_client=object(),
@@ -116,6 +121,7 @@ def test_workflow_contains_all_nodes():
     }
 
     assert expected_nodes.issubset(workflow.nodes.keys())
+
 
 def test_full_workflow_execution():
     class FakeQueryProcessor:
@@ -202,6 +208,7 @@ def test_full_workflow_execution():
     assert "Test Paper" in result["answer"]
     assert "arXiv: 1234.5678" in result["answer"]
 
+
 def test_workflow_routes_to_error_when_no_chunks():
     def parse_and_chunk(state: AgentState):
         return {
@@ -245,6 +252,7 @@ def test_workflow_routes_to_error_when_no_chunks():
     result = workflow.invoke({"query": "transformers"})
 
     assert result["answer"] == "No usable text was found in the paper"
+
 
 def test_workflow_routes_to_error_when_no_results():
     def retrieve_chunks(state: AgentState):
@@ -290,6 +298,7 @@ def test_workflow_routes_to_error_when_no_results():
 
     assert result["answer"] == "No relevant information was found in the paper"
 
+
 def test_workflow_routes_to_error_when_pdf_download_fails():
     def download_pdf(state: AgentState):
         return {"error": "Failed to download PDF for 1234.5678"}
@@ -330,6 +339,7 @@ def test_workflow_routes_to_error_when_pdf_download_fails():
     result = workflow.invoke({"query": "transformers"})
 
     assert result["answer"] == "Failed to download PDF for 1234.5678"
+
 
 def test_workflow_routes_to_error_when_arxiv_search_fails():
     def search_arxiv(state: AgentState):
@@ -375,6 +385,7 @@ def test_workflow_routes_to_error_when_arxiv_search_fails():
 
     assert result["answer"] == "Failed to search arXiv"
 
+
 def test_workflow_routes_to_error_when_query_processing_fails():
     def process_query(state: AgentState):
         return {"error": "Failed to process query"}
@@ -415,6 +426,7 @@ def test_workflow_routes_to_error_when_query_processing_fails():
     result = workflow.invoke({"query": "transformers"})
 
     assert result["answer"] == "Failed to process query"
+
 
 def test_workflow_routes_to_error_when_answer_generation_fails():
     def generate_answer(state: AgentState):
@@ -457,6 +469,7 @@ def test_workflow_routes_to_error_when_answer_generation_fails():
 
     assert result["answer"] == "Failed to generate answer"
 
+
 def test_process_query_handles_llm_error():
     class FakeQueryProcessor:
         def process(self, query):
@@ -483,6 +496,7 @@ def test_generate_answer_handles_llm_error():
 
     assert result["error"] == "Failed to generate answer"
 
+
 def test_parse_and_chunk_handles_pdf_parse_error():
     class FakePDFProcessor:
         def parse_pdf(self, pdf_path):
@@ -504,6 +518,7 @@ def test_parse_and_chunk_handles_pdf_parse_error():
 
     assert result["chunks"] == []
     assert result["error"] == "Failed to parse PDF"
+
 
 def test_workflow_routes_to_error_when_pdf_parse_fails():
     def parse_and_chunk(state: AgentState):
@@ -548,6 +563,7 @@ def test_workflow_routes_to_error_when_pdf_parse_fails():
     result = workflow.invoke({"query": "transformers"})
 
     assert result["answer"] == "Failed to parse PDF"
+
 
 def test_process_query_handles_invalid_query():
     class FakeQueryProcessor:

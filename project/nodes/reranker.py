@@ -1,5 +1,6 @@
-from sentence_transformers import CrossEncoder
 from project.nodes.vector_store import SearchResult
+from sentence_transformers import CrossEncoder
+
 
 class Reranker:
     def __init__(

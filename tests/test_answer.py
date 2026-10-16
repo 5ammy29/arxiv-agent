@@ -1,8 +1,10 @@
 from datetime import datetime
+
 from project.nodes.answer import AnswerBuilder
 from project.nodes.arxiv import Paper
 from project.nodes.chunker import TextChunk
 from project.nodes.vector_store import SearchResult
+
 
 def test_answer_builder_includes_answer_source_and_evidence():
     paper = Paper(
@@ -44,6 +46,7 @@ def test_answer_builder_includes_answer_source_and_evidence():
     assert "## Source" in result
     assert "Test Paper" in result
     assert "arXiv: 1234.5678" in result
+
 
 def test_answer_builder_handles_no_results():
     paper = Paper(

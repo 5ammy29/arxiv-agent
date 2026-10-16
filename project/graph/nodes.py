@@ -1,4 +1,5 @@
 import re
+
 from project.graph.state import AgentState
 from project.nodes.answer import AnswerBuilder
 from project.nodes.arxiv import ArxivClient, ArxivError
@@ -10,6 +11,7 @@ from project.nodes.reranker import Reranker
 from project.nodes.retriever import Retriever
 from project.nodes.vector_store import VectorStore
 
+
 def process_query(state: AgentState, query_processor: QueryProcessor):
     try:
         processed_query = query_processor.process(state["query"])
@@ -20,11 +22,13 @@ def process_query(state: AgentState, query_processor: QueryProcessor):
 
     return {"processed_query": processed_query}
 
+
 def route_after_query(state: AgentState):
     if state.get("processed_query"):
         return "search_arxiv"
 
     return "error"
+
 
 def search_arxiv(state: AgentState, arxiv_client: ArxivClient):
     try:
@@ -36,6 +40,7 @@ def search_arxiv(state: AgentState, arxiv_client: ArxivClient):
         return {"papers": [], "error": "No papers found for the query"}
 
     return {"papers": papers}
+
 
 def select_paper(state: AgentState):
     papers = state["papers"]
@@ -60,6 +65,7 @@ def select_paper(state: AgentState):
 
     return {"selected_paper": best_paper}
 
+
 def download_pdf(state: AgentState, pdf_processor: PDFProcessor):
     paper = state["selected_paper"]
 
@@ -70,11 +76,8 @@ def download_pdf(state: AgentState, pdf_processor: PDFProcessor):
 
     return {"pdf_path": str(pdf_path)}
 
-def parse_and_chunk(
-    state: AgentState,
-    pdf_processor: PDFProcessor,
-    chunker: TextChunker,
-):
+
+def parse_and_chunk(state: AgentState, pdf_processor: PDFProcessor, chunker: TextChunker):
     try:
         pages = pdf_processor.parse_pdf(state["pdf_path"])
     except PDFParseError:
@@ -87,23 +90,18 @@ def parse_and_chunk(
 
     return {"chunks": chunks}
 
-def retrieve_chunks(
-    state: AgentState,
-    vector_store: VectorStore,
-    retriever: Retriever,
-):
+
+def retrieve_chunks(state: AgentState, vector_store: VectorStore, retriever: Retriever):
     vector_store.reset()
     vector_store.add_chunks(state["chunks"])
 
     results = retriever.retrieve(state["processed_query"])
 
     if not results:
-        return {
-            "results": [],
-            "error": "No relevant information was found in the paper",
-        }
+        return {"results": [], "error": "No relevant information was found in the paper"}
 
     return {"results": results}
+
 
 def generate_answer(state: AgentState, llm: OllamaLLM):
     try:
@@ -113,23 +111,23 @@ def generate_answer(state: AgentState, llm: OllamaLLM):
 
     return {"answer": answer}
 
+
 def route_after_search(state: AgentState):
     if state.get("papers"):
         return "select_paper"
 
     return "error"
 
+
 def handle_error(state: AgentState):
     return {"answer": state.get("error", "No relevant papers were found.")}
 
+
 def build_answer(state: AgentState, answer_builder: AnswerBuilder):
-    answer = answer_builder.build(
-        state["answer"],
-        state["selected_paper"],
-        state["results"],
-    )
+    answer = answer_builder.build(state["answer"], state["selected_paper"], state["results"])
 
     return {"answer": answer}
+
 
 def route_after_chunking(state: AgentState):
     if state.get("chunks"):
@@ -137,11 +135,13 @@ def route_after_chunking(state: AgentState):
 
     return "error"
 
+
 def route_after_retrieval(state: AgentState):
     if state.get("results"):
         return "generate_answer"
 
     return "error"
+
 
 def route_after_download(state: AgentState):
     if state.get("pdf_path"):
@@ -149,11 +149,13 @@ def route_after_download(state: AgentState):
 
     return "error"
 
+
 def route_after_answer(state: AgentState):
     if state.get("answer"):
         return "build_answer"
 
     return "error"
+
 
 def search_paper(state: AgentState, arxiv_client: ArxivClient):
     try:
@@ -165,6 +167,7 @@ def search_paper(state: AgentState, arxiv_client: ArxivClient):
         return {"papers": [], "error": "Paper not found"}
 
     return {"papers": [paper]}
+
 
 def route_after_query(state: AgentState):
     if not state.get("processed_query"):

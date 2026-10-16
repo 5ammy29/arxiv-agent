@@ -1,5 +1,7 @@
 import re
+
 from project.nodes.llm import OllamaLLM
+
 
 class QueryProcessor:
     def __init__(self, llm: OllamaLLM | None = None):

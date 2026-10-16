@@ -1,8 +1,11 @@
 import requests
+
 from project.nodes.vector_store import SearchResult
+
 
 class LLMError(Exception):
     pass
+
 
 class OllamaLLM:
     def __init__(

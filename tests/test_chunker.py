@@ -1,6 +1,8 @@
 import pytest
-from project.nodes.pdf import PDFPage
+
 from project.nodes.chunker import TextChunk, TextChunker
+from project.nodes.pdf import PDFPage
+
 
 def test_chunker_creates_single_chunk_for_short_text():
     pages = [PDFPage(page=1, text="This is a short piece of text.")]
@@ -13,6 +15,7 @@ def test_chunker_creates_single_chunk_for_short_text():
     assert chunks[0].page == 1
     assert chunks[0].chunk_id == 0
 
+
 def test_chunker_splits_long_text():
     text = "word " * 100
     pages = [PDFPage(page=1, text=text)]
@@ -23,6 +26,7 @@ def test_chunker_splits_long_text():
     assert len(chunks) > 1
     assert all(chunk.page == 1 for chunk in chunks)
     assert [chunk.chunk_id for chunk in chunks] == list(range(len(chunks)))
+
 
 def test_chunker_preserves_page_numbers():
     pages = [
@@ -39,6 +43,7 @@ def test_chunker_preserves_page_numbers():
     assert chunks[1].page == 2
     assert chunks[1].text == "This is page two."
 
+
 def test_chunker_skips_empty_pages():
     pages = [
         PDFPage(page=1, text=""),
@@ -54,6 +59,7 @@ def test_chunker_skips_empty_pages():
     assert chunks[0].text == "Actual content."
     assert chunks[0].chunk_id == 0
 
+
 def test_chunker_normalizes_whitespace():
     pages = [PDFPage(page=1, text="This   is\n\nsome\ttext.")]
     chunker = TextChunker()
@@ -61,6 +67,7 @@ def test_chunker_normalizes_whitespace():
     chunks = chunker.chunk(pages)
 
     assert chunks[0].text == "This is some text."
+
 
 def test_chunker_creates_overlap():
     text = " ".join(f"word{i}" for i in range(100))
@@ -76,13 +83,16 @@ def test_chunker_creates_overlap():
 
     assert first_chunk_words & second_chunk_words
 
+
 def test_chunker_rejects_invalid_chunk_size():
     with pytest.raises(ValueError, match="chunk_size must be positive"):
         TextChunker(chunk_size=0)
 
+
 def test_chunker_rejects_negative_overlap():
     with pytest.raises(ValueError, match="chunk_overlap cannot be negative"):
         TextChunker(chunk_size=100, chunk_overlap=-1)
+
 
 def test_chunker_rejects_overlap_larger_than_chunk_size():
     with pytest.raises(
@@ -91,10 +101,12 @@ def test_chunker_rejects_overlap_larger_than_chunk_size():
     ):
         TextChunker(chunk_size=100, chunk_overlap=100)
 
+
 def test_chunker_handles_empty_input():
     chunker = TextChunker()
 
     assert chunker.chunk([]) == []
+
 
 def test_chunk_ids_are_global_across_pages():
     pages = [

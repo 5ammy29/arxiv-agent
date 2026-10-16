@@ -1,4 +1,5 @@
 from functools import partial
+
 from langgraph.graph import END, START, StateGraph
 from project.graph.nodes import (
     build_answer,
@@ -28,6 +29,7 @@ from project.nodes.query import QueryProcessor
 from project.nodes.reranker import Reranker
 from project.nodes.retriever import Retriever
 from project.nodes.vector_store import VectorStore
+
 
 def build_workflow(
     arxiv_client=None,
@@ -113,7 +115,6 @@ def build_workflow(
     graph.add_node("error", handle_error)
 
     graph.add_edge(START, "process_query")
-
     graph.add_conditional_edges(
         "process_query",
         route_after_query,
@@ -123,7 +124,6 @@ def build_workflow(
             "error": "error",
         },
     )
-
     graph.add_conditional_edges(
         "search_arxiv",
         route_after_search,
@@ -132,7 +132,6 @@ def build_workflow(
             "error": "error",
         },
     )
-
     graph.add_conditional_edges(
         "search_paper",
         route_after_search,
@@ -141,9 +140,7 @@ def build_workflow(
             "error": "error",
         },
     )
-
     graph.add_edge("select_paper", "download_pdf")
-
     graph.add_conditional_edges(
         "download_pdf",
         route_after_download,
@@ -152,7 +149,6 @@ def build_workflow(
             "error": "error",
         },
     )
-
     graph.add_conditional_edges(
         "parse_and_chunk",
         route_after_chunking,
@@ -161,7 +157,6 @@ def build_workflow(
             "error": "error",
         },
     )
-
     graph.add_conditional_edges(
         "retrieve_chunks",
         route_after_retrieval,
@@ -170,7 +165,6 @@ def build_workflow(
             "error": "error",
         },
     )
-
     graph.add_conditional_edges(
         "generate_answer",
         route_after_answer,
@@ -179,7 +173,6 @@ def build_workflow(
             "error": "error",
         },
     )
-
     graph.add_edge("build_answer", END)
     graph.add_edge("error", END)
 
