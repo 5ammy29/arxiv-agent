@@ -7,3 +7,4 @@ sentence-transformers==6.1.0
 psycopg[binary,pool]
 supabase
 python-dotenv
+langgraph-checkpoint-postgres==3.2.0

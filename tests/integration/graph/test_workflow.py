@@ -178,7 +178,7 @@ def test_full_workflow_execution():
             return [fake_result]
 
     class FakeLLM:
-        def generate_answer(self, query, results):
+        def generate_answer(self, query, results, conversation_history=None):
             return "final answer"
 
     workflow = build_workflow(
@@ -484,7 +484,7 @@ def test_process_query_handles_llm_error():
 
 def test_generate_answer_handles_llm_error():
     class FakeLLM:
-        def generate_answer(self, query, results):
+        def generate_answer(self, query, results, conversation_history=None):
             raise LLMError("LLM unavailable")
 
     state = {

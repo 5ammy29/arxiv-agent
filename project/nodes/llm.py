@@ -1,5 +1,7 @@
 import requests
 
+from langchain_core.messages import BaseMessage
+
 from project.nodes.vector_store import SearchResult
 
 
@@ -56,39 +58,69 @@ Question:
 
         return self.generate(prompt)
 
-    def generate_answer(self, query: str, results: list[SearchResult]) -> str:
-        if not results:
-            return "No relevant information was found in the retrieved paper content."
+
+    def generate_answer(
+        self,
+        query: str,
+        results: list[SearchResult],
+        conversation_history: list[BaseMessage] | None = None,
+    ) -> str:
+        history_parts = []
+
+        if conversation_history:
+            for message in conversation_history:
+                if message.type == "human":
+                    role = "User"
+                elif message.type == "ai":
+                    role = "Assistant"
+                else:
+                    continue
+
+                history_parts.append(f"{role}: {message.content}")
+
+        history_text = "No previous conversation."
+
+        if history_parts:
+            history_text = "\n\n".join(history_parts)
 
         context = []
 
-        for result in results:
-            context.append(
-                f"[Passage | Page {result.chunk.page}]\n{result.chunk.text}"
-            )
+        if results:
+            for result in results:
+                context.append(
+                    f"[Passage | Page {result.chunk.page}]\n{result.chunk.text}"
+                )
 
         context_text = "\n\n".join(context)
 
-        prompt = f"""You are answering a research question using only passages retrieved from an academic paper.
+        prompt = f"""You are a research assistant with persistent conversation history.
 
-Follow these rules:
-- Use only information supported by the provided passages.
-- Do not use outside knowledge.
-- Do not invent facts, numbers, methods, results, or conclusions.
-- Answer the exact quantity or concept asked in the question.
-- Do not substitute a related quantity for the requested one.
-- Pay close attention to technical notation and variable names.
-- When multiple values appear in the passages, identify which value corresponds to the quantity asked about.
-- Prefer explicit tabulated values when they directly identify the requested quantity.
-- If the passages do not contain enough information to answer the question, say that the available evidence is insufficient.
-- Cite supporting evidence using the page numbers provided in the passages.
-- Give a concise and research-focused answer.
+First, determine what the current question asks.
 
-Question:
+1. If the user asks what they previously said, preferred, requested,
+   or discussed, answer using the conversation history only.
+   Do not add research details or infer preferences from retrieved passages.
+   If the history does not contain the answer, say you cannot determine it
+   from the conversation history.
+
+2. If the user asks a research question, answer using the retrieved passages.
+   Do not invent facts or treat previous assistant answers as verified evidence.
+   Cite supporting evidence using the provided page numbers.
+   If the passages are insufficient, say so.
+
+3. For a follow-up research question, use conversation history to resolve
+   references, but use retrieved passages as evidence for factual claims.
+
+Conversation history:
+{history_text}
+
+Current question:
 {query}
 
 Retrieved passages:
-{context_text}
+{context_text if context_text else "No relevant passages were retrieved."}
+
+Answer:
 """
 
         return self.generate(prompt)

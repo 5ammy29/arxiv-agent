@@ -41,6 +41,7 @@ def build_workflow(
     reranker=None,
     retriever=None,
     answer_builder=None,
+    checkpointer=None
 ):
     if arxiv_client is None:
         arxiv_client = ArxivClient()
@@ -176,4 +177,4 @@ def build_workflow(
     graph.add_edge("build_answer", END)
     graph.add_edge("error", END)
 
-    return graph.compile()
+    return graph.compile(checkpointer=checkpointer)

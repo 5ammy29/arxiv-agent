@@ -1,5 +1,7 @@
 import re
 
+from langchain_core.messages import AIMessage, HumanMessage
+
 from project.graph.state import AgentState
 from project.nodes.answer import AnswerBuilder
 from project.nodes.arxiv import ArxivClient, ArxivError
@@ -105,7 +107,13 @@ def retrieve_chunks(state: AgentState, vector_store: VectorStore, retriever: Ret
 
 def generate_answer(state: AgentState, llm: OllamaLLM):
     try:
-        answer = llm.generate_answer(state["query"], state["results"])
+        messages = state.get("messages", [])
+
+        answer = llm.generate_answer(
+            state["query"],
+            state["results"],
+            messages[:-1],
+        )
     except LLMError:
         return {"error": "Failed to generate answer"}
 
@@ -124,9 +132,16 @@ def handle_error(state: AgentState):
 
 
 def build_answer(state: AgentState, answer_builder: AnswerBuilder):
-    answer = answer_builder.build(state["answer"], state["selected_paper"], state["results"])
+    answer = answer_builder.build(
+        state["answer"],
+        state["selected_paper"],
+        state["results"],
+    )
 
-    return {"answer": answer}
+    return {
+        "answer": answer,
+        "messages": [AIMessage(content=answer)],
+    }
 
 
 def route_after_chunking(state: AgentState):

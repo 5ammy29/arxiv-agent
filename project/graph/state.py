@@ -1,11 +1,13 @@
 from typing import TypedDict
 
+from langgraph.graph import MessagesState
+
 from project.nodes.arxiv import Paper
 from project.nodes.chunker import TextChunk
 from project.nodes.vector_store import SearchResult
 
 
-class AgentState(TypedDict, total=False):
+class AgentState(MessagesState, total=False):
     query: str
     paper: str
     processed_query: str

@@ -96,10 +96,11 @@ def test_generate_answer():
 
 def test_generate_answer_with_no_results():
     llm = OllamaLLM()
+    llm.generate = lambda prompt: "Cannot determine from the conversation history."
 
     answer = llm.generate_answer(
         "What did the paper find?",
         [],
     )
 
-    assert answer == "No relevant information was found in the retrieved paper content."
+    assert answer == "Cannot determine from the conversation history."
