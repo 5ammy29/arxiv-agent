@@ -3,6 +3,7 @@ from threading import Lock
 from typing import Generator
 
 from psycopg import Connection
+from psycopg.rows import dict_row
 from psycopg_pool import ConnectionPool
 
 from project.config import get_database_url
@@ -24,6 +25,7 @@ def get_connection_pool() -> ConnectionPool:
                     max_size=10,
                     timeout=30,
                     open=False,
+                    kwargs={"row_factory": dict_row},
                 )
                 pool.open(wait=True)
                 connection_pool = pool
