@@ -1,7 +1,7 @@
 import pytest
 
-from project.nodes.chunker import TextChunk, TextChunker
-from project.nodes.pdf import PDFPage
+from project.processing.chunker import TextChunk, TextChunker
+from project.processing.pdf import PDFPage
 
 
 def test_chunker_creates_single_chunk_for_short_text():

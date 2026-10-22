@@ -5,8 +5,8 @@ import pymupdf
 import pytest
 import requests
 
-import project.nodes.pdf as pdf_module
-from project.nodes.pdf import PDFDownloadError, PDFPage, PDFProcessor
+import project.processing.pdf as pdf_module
+from project.processing.pdf import PDFDownloadError, PDFPage, PDFProcessor
 
 
 def create_test_pdf(path: Path):

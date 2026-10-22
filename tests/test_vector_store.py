@@ -1,4 +1,4 @@
-from project.nodes.chunker import TextChunk
+from project.processing.chunker import TextChunk
 from project.nodes.vector_store import SearchResult, VectorStore
 
 

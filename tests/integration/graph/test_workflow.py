@@ -1,14 +1,17 @@
 from datetime import datetime
+from uuid import uuid4
+from unittest.mock import patch
 
 from langgraph.graph import END, START, StateGraph
 
+from project.application.papers.prepare_paper import PaperPreparationService
 from project.graph.nodes import generate_answer, parse_and_chunk, process_query
 from project.graph.state import AgentState
 from project.graph.workflow import build_workflow
 from project.nodes.arxiv import Paper
-from project.nodes.chunker import TextChunk
+from project.processing.chunker import TextChunk
 from project.nodes.llm import LLMError
-from project.nodes.pdf import PDFParseError
+from project.processing.pdf import PDFPage, PDFParseError
 from project.nodes.vector_store import SearchResult
 
 
@@ -19,7 +22,6 @@ def test_workflow_routes_to_error_when_no_papers():
     def route_after_search(state: AgentState):
         if state.get("papers"):
             return "select_paper"
-
         return "error"
 
     def select_paper(state: AgentState):
@@ -29,13 +31,11 @@ def test_workflow_routes_to_error_when_no_papers():
         return {"answer": state["error"]}
 
     graph = StateGraph(AgentState)
-
     graph.add_node("search_arxiv", search_arxiv)
     graph.add_node("select_paper", select_paper)
     graph.add_node("error", handle_error)
 
     graph.add_edge(START, "search_arxiv")
-
     graph.add_conditional_edges(
         "search_arxiv",
         route_after_search,
@@ -61,7 +61,6 @@ def test_workflow_routes_to_select_paper_when_papers_are_found():
     def route_after_search(state: AgentState):
         if state.get("papers"):
             return "select_paper"
-
         return "error"
 
     def select_paper(state: AgentState):
@@ -71,13 +70,11 @@ def test_workflow_routes_to_select_paper_when_papers_are_found():
         return {"answer": state.get("error", "No relevant papers were found.")}
 
     graph = StateGraph(AgentState)
-
     graph.add_node("search_arxiv", search_arxiv)
     graph.add_node("select_paper", select_paper)
     graph.add_node("error", handle_error)
 
     graph.add_edge(START, "search_arxiv")
-
     graph.add_conditional_edges(
         "search_arxiv",
         route_after_search,
@@ -131,17 +128,16 @@ def test_full_workflow_execution():
     class FakeArxivClient:
         def search_by_topic(self, query):
             paper = Paper(
-                arxiv_id="1234.5678",
+                arxiv_id="1234.5678v1",
                 title="Test Paper",
                 authors=["Test Author"],
                 abstract="Test abstract",
                 published=datetime.now(),
                 updated=datetime.now(),
-                url="https://arxiv.org/abs/1234.5678",
-                pdf_url="https://arxiv.org/pdf/1234.5678",
+                url="https://arxiv.org/abs/1234.5678v1",
+                pdf_url="https://arxiv.org/pdf/1234.5678v1",
                 categories=["cs.AI"],
             )
-
             return [paper]
 
     class FakePDFProcessor:
@@ -149,11 +145,17 @@ def test_full_workflow_execution():
             return "paper.pdf"
 
         def parse_pdf(self, pdf_path):
-            return ["page-1"]
+            return [PDFPage(page=1, text="Test page content")]
 
     class FakeChunker:
         def chunk(self, pages):
-            return ["chunk-1"]
+            return [
+                TextChunk(
+                    chunk_id=0,
+                    page=1,
+                    text="Test page content",
+                )
+            ]
 
     class FakeVectorStore:
         def reset(self):
@@ -192,13 +194,29 @@ def test_full_workflow_execution():
         retriever=FakeRetriever(),
     )
 
-    result = workflow.invoke({"query": "What did the paper find?"})
+    paper_id = uuid4()
+
+    with (
+        patch(
+            "project.graph.nodes.register_paper",
+            return_value={"id": paper_id},
+        ),
+        patch("project.application.papers.prepare_paper.update_paper_status"),
+        patch(
+            "project.application.papers.prepare_paper.upload_paper_pdf",
+            return_value="papers/1234.5678v1.pdf",
+        ),
+        patch("project.application.papers.prepare_paper.save_paper_artifact"),
+        patch("project.application.papers.prepare_paper.save_paper_content"),
+    ):
+        result = workflow.invoke({"query": "What did the paper find?"})
 
     assert result["processed_query"] == "processed query"
-    assert result["papers"][0].arxiv_id == "1234.5678"
-    assert result["selected_paper"].arxiv_id == "1234.5678"
+    assert result["papers"][0].arxiv_id == "1234.5678v1"
+    assert result["selected_paper"].arxiv_id == "1234.5678v1"
     assert result["pdf_path"] == "paper.pdf"
-    assert result["chunks"] == ["chunk-1"]
+    assert len(result["chunks"]) == 1
+    assert result["chunks"][0].text == "Test page content"
     assert result["results"] == [fake_result]
     assert "## Answer" in result["answer"]
     assert "final answer" in result["answer"]
@@ -206,7 +224,7 @@ def test_full_workflow_execution():
     assert "- Page 3" in result["answer"]
     assert "## Source" in result["answer"]
     assert "Test Paper" in result["answer"]
-    assert "arXiv: 1234.5678" in result["answer"]
+    assert "arXiv: 1234.5678v1" in result["answer"]
 
 
 def test_workflow_routes_to_error_when_no_chunks():
@@ -219,7 +237,6 @@ def test_workflow_routes_to_error_when_no_chunks():
     def route_after_chunking(state: AgentState):
         if state.get("chunks"):
             return "retrieve_chunks"
-
         return "error"
 
     def retrieve_chunks(state: AgentState):
@@ -229,13 +246,11 @@ def test_workflow_routes_to_error_when_no_chunks():
         return {"answer": state["error"]}
 
     graph = StateGraph(AgentState)
-
     graph.add_node("parse_and_chunk", parse_and_chunk)
     graph.add_node("retrieve_chunks", retrieve_chunks)
     graph.add_node("error", handle_error)
 
     graph.add_edge(START, "parse_and_chunk")
-
     graph.add_conditional_edges(
         "parse_and_chunk",
         route_after_chunking,
@@ -264,7 +279,6 @@ def test_workflow_routes_to_error_when_no_results():
     def route_after_retrieval(state: AgentState):
         if state.get("results"):
             return "generate_answer"
-
         return "error"
 
     def generate_answer(state: AgentState):
@@ -274,13 +288,11 @@ def test_workflow_routes_to_error_when_no_results():
         return {"answer": state["error"]}
 
     graph = StateGraph(AgentState)
-
     graph.add_node("retrieve_chunks", retrieve_chunks)
     graph.add_node("generate_answer", generate_answer)
     graph.add_node("error", handle_error)
 
     graph.add_edge(START, "retrieve_chunks")
-
     graph.add_conditional_edges(
         "retrieve_chunks",
         route_after_retrieval,
@@ -306,7 +318,6 @@ def test_workflow_routes_to_error_when_pdf_download_fails():
     def route_after_download(state: AgentState):
         if state.get("pdf_path"):
             return "parse_and_chunk"
-
         return "error"
 
     def parse_and_chunk(state: AgentState):
@@ -316,13 +327,11 @@ def test_workflow_routes_to_error_when_pdf_download_fails():
         return {"answer": state["error"]}
 
     graph = StateGraph(AgentState)
-
     graph.add_node("download_pdf", download_pdf)
     graph.add_node("parse_and_chunk", parse_and_chunk)
     graph.add_node("error", handle_error)
 
     graph.add_edge(START, "download_pdf")
-
     graph.add_conditional_edges(
         "download_pdf",
         route_after_download,
@@ -351,7 +360,6 @@ def test_workflow_routes_to_error_when_arxiv_search_fails():
     def route_after_search(state: AgentState):
         if state.get("papers"):
             return "select_paper"
-
         return "error"
 
     def select_paper(state: AgentState):
@@ -361,13 +369,11 @@ def test_workflow_routes_to_error_when_arxiv_search_fails():
         return {"answer": state["error"]}
 
     graph = StateGraph(AgentState)
-
     graph.add_node("search_arxiv", search_arxiv)
     graph.add_node("select_paper", select_paper)
     graph.add_node("error", handle_error)
 
     graph.add_edge(START, "search_arxiv")
-
     graph.add_conditional_edges(
         "search_arxiv",
         route_after_search,
@@ -393,7 +399,6 @@ def test_workflow_routes_to_error_when_query_processing_fails():
     def route_after_query(state: AgentState):
         if state.get("processed_query"):
             return "search_arxiv"
-
         return "error"
 
     def search_arxiv(state: AgentState):
@@ -403,13 +408,11 @@ def test_workflow_routes_to_error_when_query_processing_fails():
         return {"answer": state["error"]}
 
     graph = StateGraph(AgentState)
-
     graph.add_node("process_query", process_query)
     graph.add_node("search_arxiv", search_arxiv)
     graph.add_node("error", handle_error)
 
     graph.add_edge(START, "process_query")
-
     graph.add_conditional_edges(
         "process_query",
         route_after_query,
@@ -435,7 +438,6 @@ def test_workflow_routes_to_error_when_answer_generation_fails():
     def route_after_answer(state: AgentState):
         if state.get("answer"):
             return "build_answer"
-
         return "error"
 
     def build_answer(state: AgentState):
@@ -445,13 +447,11 @@ def test_workflow_routes_to_error_when_answer_generation_fails():
         return {"answer": state["error"]}
 
     graph = StateGraph(AgentState)
-
     graph.add_node("generate_answer", generate_answer)
     graph.add_node("build_answer", build_answer)
     graph.add_node("error", handle_error)
 
     graph.add_edge(START, "generate_answer")
-
     graph.add_conditional_edges(
         "generate_answer",
         route_after_answer,
@@ -508,13 +508,27 @@ def test_parse_and_chunk_handles_pdf_parse_error():
 
     state = {
         "pdf_path": "invalid.pdf",
+        "selected_paper": Paper(
+            arxiv_id="1234.5678v1",
+            title="Test Paper",
+            authors=["Test Author"],
+            abstract="Test abstract",
+            published=datetime.now(),
+            updated=datetime.now(),
+            url="https://arxiv.org/abs/1234.5678v1",
+            pdf_url="https://arxiv.org/pdf/1234.5678v1",
+            categories=["cs.AI"],
+        ),
+        "paper_id": str(uuid4()),
     }
 
-    result = parse_and_chunk(
-        state,
-        FakePDFProcessor(),
-        FakeChunker(),
+    service = PaperPreparationService(
+        pdf_processor=FakePDFProcessor(),
+        chunker=FakeChunker(),
     )
+
+    with patch("project.application.papers.prepare_paper.update_paper_status"):
+        result = parse_and_chunk(state, service)
 
     assert result["chunks"] == []
     assert result["error"] == "Failed to parse PDF"
@@ -530,7 +544,6 @@ def test_workflow_routes_to_error_when_pdf_parse_fails():
     def route_after_chunking(state: AgentState):
         if state.get("chunks"):
             return "retrieve_chunks"
-
         return "error"
 
     def retrieve_chunks(state: AgentState):
@@ -540,13 +553,11 @@ def test_workflow_routes_to_error_when_pdf_parse_fails():
         return {"answer": state["error"]}
 
     graph = StateGraph(AgentState)
-
     graph.add_node("parse_and_chunk", parse_and_chunk)
     graph.add_node("retrieve_chunks", retrieve_chunks)
     graph.add_node("error", handle_error)
 
     graph.add_edge(START, "parse_and_chunk")
-
     graph.add_conditional_edges(
         "parse_and_chunk",
         route_after_chunking,

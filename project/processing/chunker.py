@@ -1,7 +1,7 @@
 import re
 from dataclasses import dataclass
 
-from project.nodes.pdf import PDFPage
+from project.processing.pdf import PDFPage
 
 
 @dataclass

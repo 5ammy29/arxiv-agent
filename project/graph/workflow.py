@@ -19,16 +19,17 @@ from project.graph.nodes import (
     search_paper,
     select_paper,
 )
+from project.application.papers.prepare_paper import PaperPreparationService
 from project.graph.state import AgentState
 from project.nodes.answer import AnswerBuilder
 from project.nodes.arxiv import ArxivClient
-from project.nodes.chunker import TextChunker
 from project.nodes.llm import OllamaLLM
-from project.nodes.pdf import PDFProcessor
 from project.nodes.query import QueryProcessor
 from project.nodes.reranker import Reranker
 from project.nodes.retriever import Retriever
 from project.nodes.vector_store import VectorStore
+from project.processing.chunker import TextChunker
+from project.processing.pdf import PDFProcessor
 
 
 def build_workflow(
@@ -51,6 +52,11 @@ def build_workflow(
 
     if chunker is None:
         chunker = TextChunker()
+
+    preparation_service = PaperPreparationService(
+        pdf_processor=pdf_processor,
+        chunker=chunker,
+    )
 
     if llm is None:
         llm = OllamaLLM()
@@ -87,14 +93,13 @@ def build_workflow(
     graph.add_node("select_paper", select_paper)
     graph.add_node(
         "download_pdf",
-        partial(download_pdf, pdf_processor=pdf_processor),
+        partial(download_pdf, preparation_service=preparation_service),
     )
     graph.add_node(
         "parse_and_chunk",
         partial(
             parse_and_chunk,
-            pdf_processor=pdf_processor,
-            chunker=chunker,
+            preparation_service=preparation_service,
         ),
     )
     graph.add_node(

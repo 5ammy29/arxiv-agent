@@ -10,7 +10,9 @@ from project.infrastructure.database.papers import (
     add_paper_to_session,
     get_session_papers,
     set_active_paper,
-    remove_paper_from_session
+    remove_paper_from_session,
+    save_paper_artifact,
+    save_paper_content,
 )
 
 
@@ -279,3 +281,58 @@ def test_remove_paper_not_in_session(mock_get_connection):
     result = remove_paper_from_session(uuid4(), uuid4())
 
     assert result is False
+
+
+@patch("project.infrastructure.database.papers.get_connection")
+def test_save_paper_artifact(mock_get_connection):
+    paper_id = uuid4()
+    connection = MagicMock()
+    mock_get_connection.return_value.__enter__.return_value = connection
+
+    save_paper_artifact(paper_id, "papers/1706.03762v7.pdf")
+
+    query, params = connection.execute.call_args.args
+
+    assert "INSERT INTO paper_artifacts" in query
+    assert "ON CONFLICT (paper_id)" in query
+    assert params == (paper_id, "papers/1706.03762v7.pdf")
+
+
+@patch("project.infrastructure.database.papers.get_connection")
+def test_save_paper_content(mock_get_connection):
+    paper_id = uuid4()
+    connection = MagicMock()
+    mock_get_connection.return_value.__enter__.return_value = connection
+
+    pages = [
+        {"page_number": 1, "text": "First page."},
+        {"page_number": 2, "text": "Second page."},
+    ]
+    chunks = [
+        {"chunk_id": 0, "page_number": 1, "text": "First chunk."},
+        {"chunk_id": 1, "page_number": 2, "text": "Second chunk."},
+    ]
+
+    save_paper_content(paper_id, pages, chunks)
+
+    queries = [
+        call.args[0]
+        for call in connection.execute.call_args_list
+    ]
+
+    assert "DELETE FROM paper_pages" in queries[0]
+    assert sum("INSERT INTO paper_pages" in query for query in queries) == 2
+    assert sum("INSERT INTO paper_chunks" in query for query in queries) == 2
+
+    assert connection.execute.call_args_list[1].args[1] == (
+        paper_id, 1, "First page."
+    )
+    assert connection.execute.call_args_list[2].args[1] == (
+        paper_id, 2, "Second page."
+    )
+    assert connection.execute.call_args_list[3].args[1] == (
+        paper_id, 0, 1, "First chunk."
+    )
+    assert connection.execute.call_args_list[4].args[1] == (
+        paper_id, 1, 2, "Second chunk."
+    )

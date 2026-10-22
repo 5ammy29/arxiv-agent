@@ -4,7 +4,7 @@ import faiss
 import numpy as np
 from sentence_transformers import SentenceTransformer
 
-from project.nodes.chunker import TextChunk
+from project.processing.chunker import TextChunk
 
 
 @dataclass

@@ -2,16 +2,18 @@ import re
 
 from langchain_core.messages import AIMessage, HumanMessage
 
+from project.application.papers.prepare_paper import PaperPreparationService
 from project.graph.state import AgentState
+from project.infrastructure.database.papers import register_paper
 from project.nodes.answer import AnswerBuilder
 from project.nodes.arxiv import ArxivClient, ArxivError
-from project.nodes.chunker import TextChunker
 from project.nodes.llm import LLMError, OllamaLLM
-from project.nodes.pdf import PDFDownloadError, PDFParseError, PDFProcessor
 from project.nodes.query import QueryProcessor
 from project.nodes.reranker import Reranker
 from project.nodes.retriever import Retriever
 from project.nodes.vector_store import VectorStore
+from project.processing.chunker import TextChunker
+from project.processing.pdf import PDFDownloadError, PDFParseError, PDFProcessor
 
 
 def process_query(state: AgentState, query_processor: QueryProcessor):
@@ -68,29 +70,54 @@ def select_paper(state: AgentState):
     return {"selected_paper": best_paper}
 
 
-def download_pdf(state: AgentState, pdf_processor: PDFProcessor):
+def download_pdf(state: AgentState, preparation_service: PaperPreparationService):
     paper = state["selected_paper"]
 
     try:
-        pdf_path = pdf_processor.download_pdf(paper.pdf_url, paper.arxiv_id)
-    except PDFDownloadError:
-        return {"error": f"Failed to download PDF for {paper.arxiv_id}"}
+        paper_record = register_paper({
+            "arxiv_id": paper.arxiv_id,
+            "title": paper.title,
+            "authors": paper.authors,
+            "abstract": paper.abstract,
+            "published": paper.published,
+            "updated": paper.updated,
+            "url": paper.url,
+            "pdf_url": paper.pdf_url,
+            "categories": paper.categories,
+        })
+    except (ValueError, KeyError) as exc:
+        return {"error": f"Failed to register paper: {exc}"}
 
-    return {"pdf_path": str(pdf_path)}
+    paper_id = paper_record["id"]
+
+    result = preparation_service.download(
+        pdf_url=paper.pdf_url,
+        arxiv_id=paper.arxiv_id,
+        paper_id=paper_id,
+    )
+
+    if result.error:
+        return {"error": result.error}
+
+    return {
+        "pdf_path": result.pdf_path,
+        "paper_id": str(paper_id),
+    }
 
 
-def parse_and_chunk(state: AgentState, pdf_processor: PDFProcessor, chunker: TextChunker):
-    try:
-        pages = pdf_processor.parse_pdf(state["pdf_path"])
-    except PDFParseError:
-        return {"chunks": [], "error": "Failed to parse PDF"}
+def parse_and_chunk(state: AgentState, preparation_service: PaperPreparationService):
+    paper = state["selected_paper"]
 
-    chunks = chunker.chunk(pages)
+    result = preparation_service.parse_and_chunk(
+        pdf_path=state["pdf_path"],
+        arxiv_id=paper.arxiv_id,
+        paper_id=state["paper_id"],
+    )
 
-    if not chunks:
-        return {"chunks": [], "error": "No usable text was found in the paper"}
+    if result.error:
+        return {"chunks": result.chunks or [], "error": result.error}
 
-    return {"chunks": chunks}
+    return {"chunks": result.chunks}
 
 
 def retrieve_chunks(state: AgentState, vector_store: VectorStore, retriever: Retriever):

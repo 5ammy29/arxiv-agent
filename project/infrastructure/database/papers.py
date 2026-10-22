@@ -230,3 +230,57 @@ def remove_paper_from_session(session_id: UUID, paper_id: UUID) -> bool:
         ).fetchone()
 
     return row is not None
+
+
+def save_paper_artifact(paper_id: UUID, pdf_storage_path: str) -> None:
+    """Persist the storage path of a paper's PDF."""
+    with get_connection() as connection:
+        connection.execute(
+            """
+            INSERT INTO paper_artifacts (paper_id, pdf_storage_path)
+            VALUES (%s, %s)
+            ON CONFLICT (paper_id)
+            DO UPDATE SET
+                pdf_storage_path = EXCLUDED.pdf_storage_path,
+                updated_at = NOW()
+            """,
+            (paper_id, pdf_storage_path),
+        )
+
+
+def save_paper_content(
+    paper_id: UUID,
+    pages: list[dict[str, Any]],
+    chunks: list[dict[str, Any]],
+) -> None:
+    """Replace a paper's pages and chunks atomically."""
+    with get_connection() as connection:
+        connection.execute(
+            "DELETE FROM paper_pages WHERE paper_id = %s",
+            (paper_id,),
+        )
+
+        for page in pages:
+            connection.execute(
+                """
+                INSERT INTO paper_pages (paper_id, page_number, text)
+                VALUES (%s, %s, %s)
+                """,
+                (paper_id, page["page_number"], page["text"]),
+            )
+
+        for chunk in chunks:
+            connection.execute(
+                """
+                INSERT INTO paper_chunks (
+                    paper_id, chunk_id, page_number, text
+                )
+                VALUES (%s, %s, %s, %s)
+                """,
+                (
+                    paper_id,
+                    chunk["chunk_id"],
+                    chunk["page_number"],
+                    chunk["text"],
+                ),
+            )
