@@ -19,3 +19,15 @@ def upload_paper_pdf(pdf_path: str | Path, arxiv_id: str) -> str:
         )
 
     return storage_path
+
+
+def download_paper_pdf(storage_path: str, destination_path: str | Path) -> Path:
+    """Download a stored paper PDF to a local path."""
+    path = Path(destination_path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+
+    bucket = get_storage_bucket_client()
+    pdf_bytes = bucket.download(storage_path)
+    path.write_bytes(pdf_bytes)
+
+    return path

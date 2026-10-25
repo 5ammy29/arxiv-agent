@@ -1,6 +1,9 @@
 from unittest.mock import MagicMock, patch
 
-from project.infrastructure.storage.papers import upload_paper_pdf
+from project.infrastructure.storage.papers import (
+    download_paper_pdf,
+    upload_paper_pdf,
+)
 
 
 @patch("project.infrastructure.storage.papers.get_storage_bucket_client")
@@ -28,3 +31,22 @@ def test_upload_paper_pdf(mock_get_bucket_client, tmp_path):
 
     uploaded_file = upload_kwargs["file"]
     assert uploaded_file.closed
+
+
+@patch("project.infrastructure.storage.papers.get_storage_bucket_client")
+def test_download_paper_pdf(mock_get_bucket_client, tmp_path):
+    storage_path = "papers/1706.03762v7.pdf"
+    destination_path = tmp_path / "1706.03762v7.pdf"
+    pdf_content = b"%PDF-1.7 test PDF content"
+
+    bucket = MagicMock()
+    bucket.download.return_value = pdf_content
+    mock_get_bucket_client.return_value = bucket
+
+    result = download_paper_pdf(storage_path, destination_path)
+
+    assert result == destination_path
+    assert result.read_bytes() == pdf_content
+
+    mock_get_bucket_client.assert_called_once_with()
+    bucket.download.assert_called_once_with(storage_path)

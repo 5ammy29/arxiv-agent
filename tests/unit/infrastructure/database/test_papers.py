@@ -13,6 +13,7 @@ from project.infrastructure.database.papers import (
     remove_paper_from_session,
     save_paper_artifact,
     save_paper_content,
+    get_paper_content,
 )
 
 
@@ -336,3 +337,32 @@ def test_save_paper_content(mock_get_connection):
     assert connection.execute.call_args_list[4].args[1] == (
         paper_id, 1, 2, "Second chunk."
     )
+
+
+@patch("project.infrastructure.database.papers.get_connection")
+def test_get_paper_content(mock_get_connection):
+    paper_id = uuid4()
+
+    pages = [
+        {"page_number": 1, "text": "Page one"},
+        {"page_number": 2, "text": "Page two"},
+    ]
+    chunks = [
+        {"chunk_id": 0, "page_number": 1, "text": "Chunk one"},
+        {"chunk_id": 1, "page_number": 2, "text": "Chunk two"},
+    ]
+
+    connection = MagicMock()
+    connection.execute.return_value.fetchall.side_effect = [
+        pages,
+        chunks,
+    ]
+    mock_get_connection.return_value.__enter__.return_value = connection
+
+    result = get_paper_content(paper_id)
+
+    assert result == {
+        "pages": pages,
+        "chunks": chunks,
+    }
+    assert connection.execute.call_count == 2

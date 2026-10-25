@@ -7,14 +7,22 @@ from project.processing.chunker import TextChunk
 from project.processing.pdf import PDFDownloadError, PDFPage, PDFParseError
 
 
+@patch("project.application.papers.prepare_paper.get_paper_artifact")
 @patch("project.application.papers.prepare_paper.update_paper_status")
 @patch("project.application.papers.prepare_paper.save_paper_artifact")
 @patch("project.application.papers.prepare_paper.upload_paper_pdf")
-def test_download_returns_pdf_path(mock_upload, mock_save_artifact, mock_update_status):
+def test_download_returns_pdf_path(
+    mock_upload,
+    mock_save_artifact,
+    mock_update_status,
+    mock_get_artifact,
+):
     pdf_processor = Mock()
     chunker = Mock()
     paper_id = uuid4()
     pdf_path = Path("data/papers/1234v1.pdf")
+
+    mock_get_artifact.return_value = None
     pdf_processor.download_pdf.return_value = pdf_path
     mock_upload.return_value = "papers/1234v1.pdf"
 
@@ -34,8 +42,13 @@ def test_download_returns_pdf_path(mock_upload, mock_save_artifact, mock_update_
     mock_update_status.assert_called_once_with("1234v1", "downloading")
 
 
+@patch("project.application.papers.prepare_paper.get_paper_artifact")
 @patch("project.application.papers.prepare_paper.update_paper_status")
-def test_download_handles_download_error(mock_update_status):
+def test_download_handles_download_error(
+    mock_update_status, mock_get_artifact
+):
+    mock_get_artifact.return_value = None
+
     pdf_processor = Mock()
     pdf_processor.download_pdf.side_effect = PDFDownloadError("Download failed")
     paper_id = uuid4()
@@ -52,12 +65,62 @@ def test_download_handles_download_error(mock_update_status):
     mock_update_status.assert_any_call("1234v1", "failed")
 
 
+@patch("project.application.papers.prepare_paper.get_paper_artifact")
+@patch("project.application.papers.prepare_paper.download_paper_pdf")
+@patch("project.application.papers.prepare_paper.upload_paper_pdf")
+@patch("project.application.papers.prepare_paper.save_paper_artifact")
+@patch("project.application.papers.prepare_paper.update_paper_status")
+def test_download_reuses_cached_pdf(
+    mock_update_status,
+    mock_save_artifact,
+    mock_upload,
+    mock_download_cached,
+    mock_get_artifact,
+    tmp_path,
+):
+    pdf_processor = Mock()
+    pdf_processor.output_dir = tmp_path
+    chunker = Mock()
+    paper_id = uuid4()
+
+    mock_get_artifact.return_value = {
+        "pdf_storage_path": "papers/1234v1.pdf"
+    }
+
+    cached_pdf_path = tmp_path / "1234v1.pdf"
+    pdf_processor.parse_pdf.return_value = [
+        PDFPage(page=1, text="Cached paper content")
+    ]
+
+    service = PaperPreparationService(pdf_processor, chunker)
+
+    result = service.download(
+        "https://example.com/paper.pdf", "1234v1", paper_id
+    )
+
+    assert result.pdf_path == str(cached_pdf_path)
+    assert result.error is None
+
+    mock_download_cached.assert_called_once_with(
+        "papers/1234v1.pdf", cached_pdf_path
+    )
+    pdf_processor.download_pdf.assert_not_called()
+    mock_upload.assert_not_called()
+    mock_save_artifact.assert_not_called()
+    mock_update_status.assert_called_once_with("1234v1", "downloading")
+
+
+@patch("project.application.papers.prepare_paper.get_paper_content")
 @patch("project.application.papers.prepare_paper.update_paper_status")
 @patch("project.application.papers.prepare_paper.save_paper_content")
-def test_parse_and_chunk_returns_chunks(mock_save_content, mock_update_status):
+def test_parse_and_chunk_returns_chunks(
+    mock_save_content, mock_update_status, mock_get_content
+):
     pdf_processor = Mock()
     chunker = Mock()
     paper_id = uuid4()
+
+    mock_get_content.return_value = {"pages": [], "chunks": []}
 
     pages = [PDFPage(page=1, text="Paper content")]
     chunks = [TextChunk(chunk_id=0, page=1, text="Paper content")]
@@ -66,23 +129,35 @@ def test_parse_and_chunk_returns_chunks(mock_save_content, mock_update_status):
 
     service = PaperPreparationService(pdf_processor, chunker)
 
-    result = service.parse_and_chunk("data/papers/1234v1.pdf", "1234v1", paper_id)
+    result = service.parse_and_chunk(
+        "data/papers/1234v1.pdf", "1234v1", paper_id
+    )
 
     assert result.chunks == chunks
     assert result.error is None
-    pdf_processor.parse_pdf.assert_called_once_with(Path("data/papers/1234v1.pdf"))
+    pdf_processor.parse_pdf.assert_called_once_with(
+        Path("data/papers/1234v1.pdf")
+    )
     chunker.chunk.assert_called_once_with(pages)
+
     mock_save_content.assert_called_once_with(
         paper_id,
         [{"page_number": 1, "text": "Paper content"}],
         [{"chunk_id": 0, "page_number": 1, "text": "Paper content"}],
     )
+
+    mock_get_content.assert_called_once_with(paper_id)
     mock_update_status.assert_any_call("1234v1", "parsing")
     mock_update_status.assert_any_call("1234v1", "ready")
 
 
+@patch("project.application.papers.prepare_paper.get_paper_content")
 @patch("project.application.papers.prepare_paper.update_paper_status")
-def test_parse_and_chunk_handles_parse_error(mock_update_status):
+def test_parse_and_chunk_handles_parse_error(
+    mock_update_status, mock_get_content
+):
+    mock_get_content.return_value = {"pages": [], "chunks": []}
+
     pdf_processor = Mock()
     chunker = Mock()
     paper_id = uuid4()
@@ -98,9 +173,14 @@ def test_parse_and_chunk_handles_parse_error(mock_update_status):
     mock_update_status.assert_any_call("1234v1", "failed")
 
 
+@patch("project.application.papers.prepare_paper.get_paper_content")
 @patch("project.application.papers.prepare_paper.update_paper_status")
 @patch("project.application.papers.prepare_paper.save_paper_content")
-def test_parse_and_chunk_handles_empty_chunks(mock_save_content, mock_update_status):
+def test_parse_and_chunk_handles_empty_chunks(
+    mock_save_content, mock_update_status, mock_get_content
+):
+    mock_get_content.return_value = {"pages": [], "chunks": []}
+
     pdf_processor = Mock()
     chunker = Mock()
     paper_id = uuid4()

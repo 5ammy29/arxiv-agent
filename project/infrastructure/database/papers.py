@@ -284,3 +284,47 @@ def save_paper_content(
                     chunk["text"],
                 ),
             )
+
+
+def get_paper_content(paper_id: UUID) -> dict[str, list[dict[str, Any]]]:
+    """Retrieve a paper's persisted pages and chunks."""
+    with get_connection() as connection:
+        pages = connection.execute(
+            """
+            SELECT page_number, text
+            FROM paper_pages
+            WHERE paper_id = %s
+            ORDER BY page_number
+            """,
+            (paper_id,),
+        ).fetchall()
+
+        chunks = connection.execute(
+            """
+            SELECT chunk_id, page_number, text
+            FROM paper_chunks
+            WHERE paper_id = %s
+            ORDER BY chunk_id
+            """,
+            (paper_id,),
+        ).fetchall()
+
+    return {
+        "pages": [dict(page) for page in pages],
+        "chunks": [dict(chunk) for chunk in chunks],
+    }
+
+
+def get_paper_artifact(paper_id: UUID) -> dict[str, Any] | None:
+    """Retrieve a paper's persisted artifact metadata."""
+    with get_connection() as connection:
+        artifact = connection.execute(
+            """
+            SELECT pdf_storage_path
+            FROM paper_artifacts
+            WHERE paper_id = %s
+            """,
+            (paper_id,),
+        ).fetchone()
+
+    return dict(artifact) if artifact else None
