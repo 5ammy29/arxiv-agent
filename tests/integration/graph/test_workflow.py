@@ -157,12 +157,32 @@ def test_full_workflow_execution():
                 )
             ]
 
+    class FakeModel:
+        def get_sentence_embedding_dimension(self):
+            return 768
+
     class FakeVectorStore:
+        model_name = "BAAI/bge-base-en-v1.5"
+
+        def __init__(self):
+            self.model = FakeModel()
+            self.index_bytes = b"fake-index"
+
         def reset(self):
             pass
 
         def add_chunks(self, chunks):
             pass
+
+        def serialize_index(self):
+            return self.index_bytes
+
+        def load_index(self, index_bytes, chunks, chunk_ids):
+            pass
+
+    class FakeVectorIndexCache:
+        def get_or_build_index(self, paper_id, chunks, vector_store):
+            vector_store.add_chunks(chunks)
 
     fake_chunk = TextChunk(
         chunk_id=0,
@@ -190,6 +210,7 @@ def test_full_workflow_execution():
         llm=FakeLLM(),
         query_processor=FakeQueryProcessor(),
         vector_store=FakeVectorStore(),
+        vector_index_cache=FakeVectorIndexCache(),
         reranker=object(),
         retriever=FakeRetriever(),
     )

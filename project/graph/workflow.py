@@ -19,6 +19,7 @@ from project.graph.nodes import (
     search_paper,
     select_paper,
 )
+from project.application.retrieval.vector_index_cache import VectorIndexCache
 from project.application.papers.prepare_paper import PaperPreparationService
 from project.graph.state import AgentState
 from project.nodes.answer import AnswerBuilder
@@ -39,10 +40,11 @@ def build_workflow(
     llm=None,
     query_processor=None,
     vector_store=None,
+    vector_index_cache=None,
     reranker=None,
     retriever=None,
     answer_builder=None,
-    checkpointer=None
+    checkpointer=None,
 ):
     if arxiv_client is None:
         arxiv_client = ArxivClient()
@@ -52,6 +54,12 @@ def build_workflow(
 
     if chunker is None:
         chunker = TextChunker()
+
+    if vector_store is None:
+        vector_store = VectorStore()
+
+    if vector_index_cache is None:
+        vector_index_cache = VectorIndexCache()
 
     preparation_service = PaperPreparationService(
         pdf_processor=pdf_processor,
@@ -63,9 +71,6 @@ def build_workflow(
 
     if query_processor is None:
         query_processor = QueryProcessor(llm=llm)
-
-    if vector_store is None:
-        vector_store = VectorStore()
 
     if reranker is None:
         reranker = Reranker()
@@ -108,6 +113,7 @@ def build_workflow(
             retrieve_chunks,
             vector_store=vector_store,
             retriever=retriever,
+            vector_index_cache=vector_index_cache,
         ),
     )
     graph.add_node(

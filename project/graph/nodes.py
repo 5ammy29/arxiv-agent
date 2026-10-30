@@ -2,6 +2,7 @@ import re
 
 from langchain_core.messages import AIMessage, HumanMessage
 
+from project.application.retrieval.vector_index_cache import VectorIndexCache
 from project.application.papers.prepare_paper import PaperPreparationService
 from project.graph.state import AgentState
 from project.infrastructure.database.papers import register_paper
@@ -120,14 +121,25 @@ def parse_and_chunk(state: AgentState, preparation_service: PaperPreparationServ
     return {"chunks": result.chunks}
 
 
-def retrieve_chunks(state: AgentState, vector_store: VectorStore, retriever: Retriever):
-    vector_store.reset()
-    vector_store.add_chunks(state["chunks"])
+def retrieve_chunks(
+    state: AgentState,
+    vector_store: VectorStore,
+    retriever: Retriever,
+    vector_index_cache: VectorIndexCache,
+):
+    vector_index_cache.get_or_build_index(
+        paper_id=state["paper_id"],
+        chunks=state["chunks"],
+        vector_store=vector_store,
+    )
 
     results = retriever.retrieve(state["processed_query"])
 
     if not results:
-        return {"results": [], "error": "No relevant information was found in the paper"}
+        return {
+            "results": [],
+            "error": "No relevant information was found in the paper",
+        }
 
     return {"results": results}
 

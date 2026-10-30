@@ -16,6 +16,7 @@ class SearchResult:
 
 class VectorStore:
     def __init__(self, model_name: str = "BAAI/bge-base-en-v1.5"):
+        self.model_name = model_name
         self.model = SentenceTransformer(model_name)
         self.index = None
         self.chunks: list[TextChunk] = []
@@ -23,6 +24,55 @@ class VectorStore:
     def reset(self) -> None:
         self.index = None
         self.chunks = []
+
+    def serialize_index(self) -> bytes:
+        if self.index is None:
+            raise ValueError("Cannot serialize an empty vector index.")
+
+        return faiss.serialize_index(self.index).tobytes()
+
+    def load_index(
+        self,
+        index_bytes: bytes,
+        chunks: list[TextChunk],
+        chunk_ids: list[int],
+    ) -> None:
+        if not index_bytes:
+            raise ValueError("Vector index data must not be empty.")
+
+        if len(chunk_ids) == 0:
+            raise ValueError("Chunk IDs must not be empty.")
+
+        if len(set(chunk_ids)) != len(chunk_ids):
+            raise ValueError("Chunk IDs must be unique.")
+
+        chunks_by_id = {chunk.chunk_id: chunk for chunk in chunks}
+
+        if len(chunks_by_id) != len(chunks):
+            raise ValueError("Current chunks contain duplicate chunk IDs.")
+
+        if set(chunk_ids) != set(chunks_by_id):
+            raise ValueError(
+                "Cached chunk IDs do not match the current paper chunks."
+            )
+
+        serialized_array = np.frombuffer(index_bytes, dtype=np.uint8)
+        restored_index = faiss.deserialize_index(serialized_array)
+
+        if restored_index.ntotal != len(chunk_ids):
+            raise ValueError(
+                "Cached index size does not match the stored chunk mapping."
+            )
+
+        expected_dimension = self.model.get_sentence_embedding_dimension()
+
+        if restored_index.d != expected_dimension:
+            raise ValueError(
+                "Cached index dimension does not match the embedding model."
+            )
+
+        self.index = restored_index
+        self.chunks = [chunks_by_id[chunk_id] for chunk_id in chunk_ids]
 
     def add_chunks(self, chunks: list[TextChunk]) -> None:
         if not chunks:
