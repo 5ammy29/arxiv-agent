@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+from threading import Event
 from unittest.mock import Mock, patch
 from uuid import UUID
 
@@ -7,13 +9,15 @@ from project.application.retrieval.vector_index_cache import (
     VectorIndexCache,
     _fallback_content_fingerprint,
 )
+from project.application.papers.processing_lock import ActivePaperProcessingLease
+from project.infrastructure.database.paper_locks import PaperProcessingLease
 from project.processing.chunker import TextChunk
 
 
 PAPER_ID = UUID("12345678-1234-5678-1234-567812345678")
 MODEL_NAME = "BAAI/bge-base-en-v1.5"
 EMBEDDING_DIMENSION = 768
-STORAGE_PATH = f"vector_indexes/{PAPER_ID}.faiss"
+STORAGE_PATH = f"vector_indexes/{PAPER_ID}/test.faiss"
 INDEX_BYTES = b"serialized-faiss-index"
 
 
@@ -38,7 +42,14 @@ def vector_store():
 
 @pytest.fixture
 def cache():
-    return VectorIndexCache()
+    class FakeLockManager:
+        @contextmanager
+        def acquire(self, paper_id):
+            yield ActivePaperProcessingLease(
+                PaperProcessingLease(paper_id, UUID(int=1), 1), Event()
+            )
+
+    return VectorIndexCache(lock_manager=FakeLockManager())
 
 
 @pytest.fixture
@@ -93,7 +104,11 @@ def test_cache_miss_builds_and_persists_index(
     vector_store.serialize_index.assert_called_once_with()
     upload.assert_called_once_with(INDEX_BYTES, PAPER_ID)
     assert save.call_count == 1
-    assert save.call_args.kwargs == {
+    assert {
+        key: value
+        for key, value in save.call_args.kwargs.items()
+        if key != "lease"
+    } == {
         "paper_id": PAPER_ID,
         "index_storage_path": STORAGE_PATH,
         "embedding_model": MODEL_NAME,
@@ -102,6 +117,28 @@ def test_cache_miss_builds_and_persists_index(
         "content_fingerprint": _fallback_content_fingerprint(chunks),
         "chunking_fingerprint": "direct-chunks-v1",
     }
+    assert save.call_args.kwargs["lease"].paper_id == PAPER_ID
+
+
+def test_cache_miss_is_observable(cache, chunks, vector_store, caplog):
+    caplog.set_level("INFO")
+    with (
+        patch(
+            "project.application.retrieval.vector_index_cache.get_paper_vector_index",
+            return_value=None,
+        ),
+        patch(
+            "project.application.retrieval.vector_index_cache.upload_vector_index",
+            return_value=STORAGE_PATH,
+        ),
+        patch("project.application.retrieval.vector_index_cache.save_paper_vector_index"),
+    ):
+        cache.get_or_build_index(PAPER_ID, chunks, vector_store)
+
+    assert any(
+        "vector_index_cache_miss" in record.message and "no_metadata" in record.message
+        for record in caplog.records
+    )
 
 
 def test_valid_cache_hit_restores_index_without_reembedding(

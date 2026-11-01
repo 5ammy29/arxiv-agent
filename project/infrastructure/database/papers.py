@@ -4,9 +4,18 @@ from typing import Any
 from uuid import UUID
 
 from project.infrastructure.database.connection import get_connection
+from project.infrastructure.database.paper_locks import (
+    PaperProcessingLease,
+    assert_current_paper_processing_lease,
+)
 
 
 version_pattern = re.compile(r"^(?P<base>.+?)v(?P<version>\d+)$")
+
+
+def _assert_lease_paper(lease: PaperProcessingLease, paper_id: UUID) -> None:
+    if lease.paper_id != paper_id:
+        raise ValueError("Processing lease does not belong to this paper.")
 
 
 def parse_arxiv_id(id: str) -> tuple[str, int | None]:
@@ -85,7 +94,12 @@ def get_paper(arxiv_id: str) -> dict[str, Any] | None:
     return dict(row) if row is not None else None
 
 
-def update_paper_status(arxiv_id: str, status: str) -> dict[str, Any] | None:
+def update_paper_status(
+    arxiv_id: str,
+    status: str,
+    *,
+    lease: PaperProcessingLease,
+) -> dict[str, Any] | None:
     base_id, version = parse_arxiv_id(arxiv_id)
 
     if version is None:
@@ -103,15 +117,16 @@ def update_paper_status(arxiv_id: str, status: str) -> dict[str, Any] | None:
         raise ValueError(f"Invalid processing status: {status}")
 
     with get_connection() as connection:
+        assert_current_paper_processing_lease(connection, lease)
         row = connection.execute(
             """
             UPDATE papers
             SET processing_status = %s,
                 updated_at = NOW()
-            WHERE arxiv_id = %s AND version = %s
+            WHERE arxiv_id = %s AND version = %s AND id = %s
             RETURNING *
             """,
-            (status, base_id, version),
+            (status, base_id, version, lease.paper_id),
         ).fetchone()
 
     return dict(row) if row is not None else None
@@ -241,8 +256,12 @@ def save_paper_artifact(
     pdf_storage_path: str,
     content_fingerprint: str | None = None,
     chunking_fingerprint: str | None = None,
+    *,
+    lease: PaperProcessingLease,
 ) -> None:
+    _assert_lease_paper(lease, paper_id)
     with get_connection() as connection:
+        assert_current_paper_processing_lease(connection, lease)
         connection.execute(
             """
             INSERT INTO paper_artifacts (
@@ -272,8 +291,12 @@ def save_paper_content(
     chunks: list[dict[str, Any]],
     content_fingerprint: str,
     chunking_fingerprint: str,
+    *,
+    lease: PaperProcessingLease,
 ) -> str | None:
+    _assert_lease_paper(lease, paper_id)
     with get_connection() as connection:
+        assert_current_paper_processing_lease(connection, lease)
         previous_index = connection.execute(
             """
             DELETE FROM paper_vector_indexes
@@ -337,8 +360,14 @@ def save_paper_content(
     )
 
 
-def invalidate_paper_content(paper_id: UUID) -> str | None:
+def invalidate_paper_content(
+    paper_id: UUID,
+    *,
+    lease: PaperProcessingLease,
+) -> str | None:
+    _assert_lease_paper(lease, paper_id)
     with get_connection() as connection:
+        assert_current_paper_processing_lease(connection, lease)
         previous_index = connection.execute(
             """
             DELETE FROM paper_vector_indexes
@@ -416,11 +445,15 @@ def get_paper_artifact(paper_id: UUID) -> dict[str, Any] | None:
 def replace_paper_pdf(
     paper_id: UUID,
     new_pdf_storage_path: str,
+    *,
+    lease: PaperProcessingLease,
 ) -> dict[str, str | None]:
     if not new_pdf_storage_path.strip():
         raise ValueError("PDF storage path must not be empty.")
+    _assert_lease_paper(lease, paper_id)
 
     with get_connection() as connection:
+        assert_current_paper_processing_lease(connection, lease)
         paper = connection.execute(
             """
             SELECT id
@@ -497,4 +530,40 @@ def replace_paper_pdf(
             if previous_index is not None
             else None
         ),
+    }
+
+
+def get_referenced_artifact_paths() -> set[str]:
+    """Return the database-authoritative set of active storage objects."""
+    with get_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT pdf_storage_path AS storage_path
+            FROM paper_artifacts
+            UNION
+            SELECT index_storage_path AS storage_path
+            FROM paper_vector_indexes
+            """
+        ).fetchall()
+    return {row["storage_path"] for row in rows if row["storage_path"]}
+
+
+def get_active_processing_artifact_prefixes() -> set[str]:
+    """Return paths that cleanup must preserve while their lease is live."""
+    with get_connection() as connection:
+        rows = connection.execute(
+            """
+            SELECT
+                'papers/' || p.arxiv_id || 'v' || p.version || '/' AS pdf_prefix,
+                'vector_indexes/' || p.id::text || '/' AS index_prefix
+            FROM paper_processing_locks AS l
+            JOIN papers AS p ON p.id = l.paper_id
+            WHERE l.lease_expires_at > clock_timestamp()
+            """
+        ).fetchall()
+    return {
+        prefix
+        for row in rows
+        for prefix in (row["pdf_prefix"], row["index_prefix"])
+        if prefix
     }

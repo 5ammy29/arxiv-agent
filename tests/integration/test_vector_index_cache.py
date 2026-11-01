@@ -1,3 +1,5 @@
+from contextlib import contextmanager
+from threading import Event
 from unittest.mock import patch
 from uuid import uuid4
 
@@ -9,6 +11,8 @@ from project.application.retrieval.vector_index_cache import (
     VectorIndexCache,
     _fallback_content_fingerprint,
 )
+from project.application.papers.processing_lock import ActivePaperProcessingLease
+from project.infrastructure.database.paper_locks import PaperProcessingLease
 from project.processing.chunker import TextChunk
 
 
@@ -85,6 +89,18 @@ class FakeVectorStore:
         ]
 
 
+class FakeLockManager:
+    @contextmanager
+    def acquire(self, paper_id):
+        yield ActivePaperProcessingLease(
+            PaperProcessingLease(paper_id, uuid4(), 1), Event()
+        )
+
+
+def vector_index_cache():
+    return VectorIndexCache(lock_manager=FakeLockManager())
+
+
 @pytest.fixture
 def chunks():
     return [
@@ -94,7 +110,8 @@ def chunks():
     ]
 
 
-def make_metadata(paper_id, chunks, storage_path="vector_indexes/test.faiss"):
+def make_metadata(paper_id, chunks, storage_path=None):
+    storage_path = storage_path or f"vector_indexes/{paper_id}/test.faiss"
     return {
         "paper_id": str(paper_id),
         "index_storage_path": storage_path,
@@ -123,7 +140,7 @@ def test_cache_miss_persists_index_and_metadata(chunks):
     saved_metadata = {}
 
     def upload(index_bytes, requested_paper_id):
-        path = f"vector_indexes/{requested_paper_id}.faiss"
+        path = f"vector_indexes/{requested_paper_id}/test.faiss"
         stored_objects[path] = index_bytes
         return path
 
@@ -144,7 +161,7 @@ def test_cache_miss_persists_index_and_metadata(chunks):
             side_effect=save_metadata,
         ),
     ):
-        restored = VectorIndexCache().get_or_build_index(
+        restored = vector_index_cache().get_or_build_index(
             paper_id,
             chunks,
             vector_store,
@@ -183,7 +200,7 @@ def test_valid_cache_restores_index_without_rebuilding(chunks):
             "project.application.retrieval.vector_index_cache.save_paper_vector_index",
         ) as save_metadata,
     ):
-        restored = VectorIndexCache().get_or_build_index(
+        restored = vector_index_cache().get_or_build_index(
             paper_id,
             chunks,
             restored_store,
@@ -211,13 +228,13 @@ def test_missing_metadata_rebuilds_index(chunks):
         ),
         patch(
             "project.application.retrieval.vector_index_cache.upload_vector_index",
-            return_value=f"vector_indexes/{paper_id}.faiss",
+            return_value=f"vector_indexes/{paper_id}/test.faiss",
         ) as upload,
         patch(
             "project.application.retrieval.vector_index_cache.save_paper_vector_index",
         ) as save_metadata,
     ):
-        restored = VectorIndexCache().get_or_build_index(
+        restored = vector_index_cache().get_or_build_index(
             paper_id,
             chunks,
             vector_store,
@@ -245,13 +262,13 @@ def test_corrupt_cached_index_is_rebuilt(chunks):
         ),
         patch(
             "project.application.retrieval.vector_index_cache.upload_vector_index",
-            return_value=f"vector_indexes/{paper_id}.faiss",
+            return_value=f"vector_indexes/{paper_id}/test.faiss",
         ) as upload,
         patch(
             "project.application.retrieval.vector_index_cache.save_paper_vector_index",
         ) as save_metadata,
     ):
-        restored = VectorIndexCache().get_or_build_index(
+        restored = vector_index_cache().get_or_build_index(
             paper_id,
             chunks,
             vector_store,

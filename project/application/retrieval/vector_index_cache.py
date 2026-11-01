@@ -4,6 +4,10 @@ import logging
 from typing import Any, Protocol
 from uuid import UUID
 
+from project.application.papers.processing_lock import (
+    ActivePaperProcessingLease,
+    PaperProcessingLockManager,
+)
 from project.infrastructure.database.vector_indexes import (
     delete_paper_vector_index,
     get_paper_vector_index,
@@ -51,14 +55,31 @@ def _fallback_content_fingerprint(chunks: list[TextChunk]) -> str:
 
 
 class VectorIndexCache:
-    def _discard_metadata_and_object(self, paper_id: UUID) -> None:
-        storage_path = delete_paper_vector_index(paper_id)
+    def __init__(
+        self,
+        *,
+        lock_manager: PaperProcessingLockManager | None = None,
+    ) -> None:
+        self.lock_manager = lock_manager or PaperProcessingLockManager()
+
+    def _discard_metadata_and_object(
+        self,
+        paper_id: UUID,
+        active_lease: ActivePaperProcessingLease,
+    ) -> None:
+        active_lease.assert_active()
+        storage_path = delete_paper_vector_index(
+            paper_id,
+            lease=active_lease.lease,
+        )
         if isinstance(storage_path, str) and storage_path:
-            try:
-                delete_vector_index(storage_path)
-            except Exception as error:
-                if not _is_missing_storage_object(error):
-                    raise
+            # Readers may still be downloading the immutable object. Cleanup
+            # uses a grace period and database references before deleting it.
+            logger.info(
+                "vector_index_cleanup_deferred paper_id=%s path=%s",
+                paper_id,
+                storage_path,
+            )
 
     def get_or_build_index(
         self,
@@ -69,10 +90,31 @@ class VectorIndexCache:
         content_fingerprint: str | None = None,
         chunking_fingerprint: str | None = None,
     ) -> bool:
+        paper_uuid = UUID(str(paper_id))
+        with self.lock_manager.acquire(paper_uuid) as active_lease:
+            return self._get_or_build_index(
+                paper_uuid,
+                chunks,
+                vector_store,
+                active_lease=active_lease,
+                content_fingerprint=content_fingerprint,
+                chunking_fingerprint=chunking_fingerprint,
+            )
+
+    def _get_or_build_index(
+        self,
+        paper_id: UUID,
+        chunks: list[TextChunk],
+        vector_store: VectorStoreProtocol,
+        *,
+        active_lease: ActivePaperProcessingLease,
+        content_fingerprint: str | None = None,
+        chunking_fingerprint: str | None = None,
+    ) -> bool:
         if not chunks:
             raise ValueError("Cannot cache an index without chunks.")
 
-        paper_uuid = UUID(str(paper_id))
+        paper_uuid = paper_id
         current_chunk_ids = [chunk.chunk_id for chunk in chunks]
         if len(set(current_chunk_ids)) != len(current_chunk_ids):
             raise ValueError("Current chunks contain duplicate chunk IDs.")
@@ -110,12 +152,17 @@ class VectorIndexCache:
             )
 
             if cache_is_valid:
+                logger.debug("vector_index_cache_validated paper_id=%s valid=true", paper_uuid)
                 try:
                     index_bytes = download_vector_index(metadata["index_storage_path"])
                 except Exception as error:
                     if not _is_missing_storage_object(error):
                         raise
                     logger.warning("Cached FAISS object for paper %s is missing.", paper_uuid)
+                    logger.info(
+                        "vector_index_cache_miss paper_id=%s reason=storage_missing",
+                        paper_uuid,
+                    )
                     invalidate_cache = True
                 else:
                     vector_store.reset()
@@ -132,6 +179,11 @@ class VectorIndexCache:
                             paper_uuid,
                             error,
                         )
+                        logger.info(
+                            "vector_index_cache_hit paper_id=%s path=%s",
+                            paper_uuid,
+                            metadata["index_storage_path"],
+                        )
                         vector_store.reset()
                         store_is_clean = True
                         invalidate_cache = True
@@ -139,20 +191,34 @@ class VectorIndexCache:
                         logger.info("Restored cached FAISS index for paper %s.", paper_uuid)
                         return True
             else:
+                logger.info(
+                    "vector_index_cache_miss paper_id=%s reason=invalid_metadata",
+                    paper_uuid,
+                )
                 invalidate_cache = True
+        else:
+            logger.info(
+                "vector_index_cache_miss paper_id=%s reason=no_metadata",
+                paper_uuid,
+            )
 
-        # Remove obsolete metadata/object before writing the deterministic path;
-        # otherwise cleanup could delete the replacement object after upsert.
+        # Remove obsolete metadata before publishing a new immutable object.
+        # The old object is left for grace-period cleanup so in-flight readers
+        # are never disrupted.
         if invalidate_cache:
-            self._discard_metadata_and_object(paper_uuid)
+            self._discard_metadata_and_object(paper_uuid, active_lease)
 
         if not store_is_clean:
             vector_store.reset()
+        active_lease.assert_active()
         vector_store.add_chunks(chunks)
         index_bytes = vector_store.serialize_index()
+        active_lease.assert_active()
         storage_path = upload_vector_index(index_bytes, paper_uuid)
+        logger.info("vector_index_uploaded paper_id=%s path=%s", paper_uuid, storage_path)
 
         try:
+            active_lease.assert_active()
             save_paper_vector_index(
                 paper_id=paper_uuid,
                 index_storage_path=storage_path,
@@ -161,8 +227,14 @@ class VectorIndexCache:
                 chunk_ids=current_chunk_ids,
                 content_fingerprint=content_fingerprint,
                 chunking_fingerprint=chunking_fingerprint,
+                lease=active_lease.lease,
             )
         except Exception:
+            logger.exception(
+                "vector_index_publication_failed paper_id=%s path=%s",
+                paper_uuid,
+                storage_path,
+            )
             try:
                 delete_vector_index(storage_path)
             except Exception as cleanup_error:

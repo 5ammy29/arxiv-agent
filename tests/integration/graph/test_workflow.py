@@ -1,4 +1,6 @@
+from contextlib import contextmanager
 from datetime import datetime
+from types import SimpleNamespace
 from uuid import uuid4
 from unittest.mock import patch
 
@@ -13,6 +15,20 @@ from project.processing.chunker import TextChunk
 from project.nodes.llm import LLMError
 from project.processing.pdf import PDFPage, PDFParseError
 from project.nodes.vector_store import SearchResult
+
+
+class FakeActiveLease:
+    def __init__(self, paper_id):
+        self.lease = SimpleNamespace(paper_id=paper_id)
+
+    def assert_active(self):
+        pass
+
+
+class FakeLockManager:
+    @contextmanager
+    def acquire(self, paper_id):
+        yield FakeActiveLease(paper_id)
 
 
 def test_workflow_routes_to_error_when_no_papers():
@@ -108,9 +124,9 @@ def test_workflow_contains_all_nodes():
     expected_nodes = {
         "process_query",
         "search_arxiv",
+        "search_paper",
         "select_paper",
-        "download_pdf",
-        "parse_and_chunk",
+        "prepare_paper",
         "retrieve_chunks",
         "generate_answer",
         "build_answer",
@@ -205,17 +221,21 @@ def test_full_workflow_execution():
         def generate_answer(self, query, results, conversation_history=None):
             return "final answer"
 
-    workflow = build_workflow(
-        arxiv_client=FakeArxivClient(),
-        pdf_processor=FakePDFProcessor(),
-        chunker=FakeChunker(),
-        llm=FakeLLM(),
-        query_processor=FakeQueryProcessor(),
-        vector_store=FakeVectorStore(),
-        vector_index_cache=FakeVectorIndexCache(),
-        reranker=object(),
-        retriever=FakeRetriever(),
-    )
+    with patch(
+        "project.graph.workflow.PaperProcessingLockManager",
+        return_value=FakeLockManager(),
+    ):
+        workflow = build_workflow(
+            arxiv_client=FakeArxivClient(),
+            pdf_processor=FakePDFProcessor(),
+            chunker=FakeChunker(),
+            llm=FakeLLM(),
+            query_processor=FakeQueryProcessor(),
+            vector_store=FakeVectorStore(),
+            vector_index_cache=FakeVectorIndexCache(),
+            reranker=object(),
+            retriever=FakeRetriever(),
+        )
 
     paper_id = uuid4()
 
@@ -564,6 +584,7 @@ def test_parse_and_chunk_handles_pdf_parse_error():
     service = PaperPreparationService(
         pdf_processor=FakePDFProcessor(),
         chunker=FakeChunker(),
+        lock_manager=FakeLockManager(),
     )
 
     with (

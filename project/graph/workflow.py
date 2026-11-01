@@ -3,15 +3,13 @@ from functools import partial
 from langgraph.graph import END, START, StateGraph
 from project.graph.nodes import (
     build_answer,
-    download_pdf,
     generate_answer,
     handle_error,
-    parse_and_chunk,
+    prepare_paper,
     process_query,
     retrieve_chunks,
     route_after_answer,
     route_after_chunking,
-    route_after_download,
     route_after_query,
     route_after_retrieval,
     route_after_search,
@@ -21,6 +19,7 @@ from project.graph.nodes import (
 )
 from project.application.retrieval.vector_index_cache import VectorIndexCache
 from project.application.papers.prepare_paper import PaperPreparationService
+from project.application.papers.processing_lock import PaperProcessingLockManager
 from project.graph.state import AgentState
 from project.nodes.answer import AnswerBuilder
 from project.nodes.arxiv import ArxivClient
@@ -58,12 +57,15 @@ def build_workflow(
     if vector_store is None:
         vector_store = VectorStore()
 
+    lock_manager = PaperProcessingLockManager()
+
     if vector_index_cache is None:
-        vector_index_cache = VectorIndexCache()
+        vector_index_cache = VectorIndexCache(lock_manager=lock_manager)
 
     preparation_service = PaperPreparationService(
         pdf_processor=pdf_processor,
         chunker=chunker,
+        lock_manager=lock_manager,
     )
 
     if llm is None:
@@ -97,15 +99,8 @@ def build_workflow(
     )
     graph.add_node("select_paper", select_paper)
     graph.add_node(
-        "download_pdf",
-        partial(download_pdf, preparation_service=preparation_service),
-    )
-    graph.add_node(
-        "parse_and_chunk",
-        partial(
-            parse_and_chunk,
-            preparation_service=preparation_service,
-        ),
+        "prepare_paper",
+        partial(prepare_paper, preparation_service=preparation_service),
     )
     graph.add_node(
         "retrieve_chunks",
@@ -152,17 +147,9 @@ def build_workflow(
             "error": "error",
         },
     )
-    graph.add_edge("select_paper", "download_pdf")
+    graph.add_edge("select_paper", "prepare_paper")
     graph.add_conditional_edges(
-        "download_pdf",
-        route_after_download,
-        {
-            "parse_and_chunk": "parse_and_chunk",
-            "error": "error",
-        },
-    )
-    graph.add_conditional_edges(
-        "parse_and_chunk",
+        "prepare_paper",
         route_after_chunking,
         {
             "retrieve_chunks": "retrieve_chunks",

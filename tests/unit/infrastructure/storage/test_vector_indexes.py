@@ -8,6 +8,7 @@ from project.infrastructure.storage.vector_indexes import (
     upload_vector_index,
 )
 
+from concurrent.futures import ThreadPoolExecutor
 
 @patch(
     "project.infrastructure.storage.vector_indexes.get_storage_bucket_client"
@@ -21,15 +22,15 @@ def test_upload_vector_index(mock_get_bucket):
 
     result = upload_vector_index(index_bytes, paper_id)
 
-    expected_path = f"vector_indexes/{paper_id}.faiss"
-    assert result == expected_path
+    assert result.startswith(f"vector_indexes/{paper_id}/")
+    assert result.endswith(".faiss")
 
     bucket.upload.assert_called_once_with(
-        path=expected_path,
+        path=result,
         file=index_bytes,
         file_options={
             "content-type": "application/octet-stream",
-            "upsert": "true",
+            "upsert": "false",
         },
     )
 
@@ -48,7 +49,8 @@ def test_upload_vector_index_rejects_empty_bytes():
     "project.infrastructure.storage.vector_indexes.get_storage_bucket_client"
 )
 def test_download_vector_index(mock_get_bucket):
-    storage_path = "vector_indexes/example.faiss"
+    paper_id = uuid4()
+    storage_path = f"vector_indexes/{paper_id}/{uuid4().hex}.faiss"
     index_bytes = b"serialized-faiss-index"
 
     bucket = MagicMock()
@@ -69,3 +71,35 @@ def test_download_vector_index_rejects_empty_path():
             download_vector_index(" ")
 
         mock_get_bucket.assert_not_called()
+
+
+def test_concurrent_uploads_use_unique_storage_paths():
+    paper_id = uuid4()
+    index_bytes = b"serialized-faiss-index"
+
+    bucket = MagicMock()
+
+    with patch(
+        "project.infrastructure.storage.vector_indexes.get_storage_bucket_client",
+        return_value=bucket,
+    ):
+        with ThreadPoolExecutor(max_workers=10) as executor:
+            paths = list(
+                executor.map(
+                    lambda _: upload_vector_index(index_bytes, paper_id),
+                    range(20),
+                )
+            )
+
+    assert len(paths) == 20
+    assert len(set(paths)) == 20
+
+    for path in paths:
+        assert path.startswith(f"vector_indexes/{paper_id}/")
+        assert path.endswith(".faiss")
+
+    assert bucket.upload.call_count == 20
+
+    for call in bucket.upload.call_args_list:
+        assert call.kwargs["file"] == index_bytes
+        assert call.kwargs["file_options"]["upsert"] == "false"

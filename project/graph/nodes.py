@@ -87,7 +87,7 @@ def select_paper(state: AgentState):
     return {"selected_paper": best_paper}
 
 
-def download_pdf(
+def prepare_paper(
     state: AgentState,
     preparation_service: PaperPreparationService,
 ):
@@ -115,14 +115,14 @@ def download_pdf(
     paper_id = paper_record["id"]
 
     try:
-        result = preparation_service.download(
+        result = preparation_service.prepare(
             pdf_url=paper.pdf_url,
             arxiv_id=paper.arxiv_id,
             paper_id=paper_id,
         )
     except Exception:
-        logger.exception("Unexpected PDF preparation service failure.")
-        return {"error": "Failed to prepare paper PDF"}
+        logger.exception("Unexpected coordinated paper preparation failure.")
+        return {"error": "Failed to prepare paper"}
 
     if result.error:
         return {"error": result.error}
@@ -130,6 +130,9 @@ def download_pdf(
     return {
         "pdf_path": result.pdf_path,
         "paper_id": str(paper_id),
+        "chunks": result.chunks,
+        "content_fingerprint": result.content_fingerprint,
+        "chunking_fingerprint": result.chunking_fingerprint,
     }
 
 

@@ -1,4 +1,4 @@
-from uuid import UUID
+from uuid import UUID, uuid4
 
 from project.infrastructure.storage.connection import (
     get_storage_bucket_client,
@@ -10,7 +10,10 @@ def upload_vector_index(index_bytes: bytes, paper_id: UUID) -> str:
     if not index_bytes:
         raise ValueError("Vector index data must not be empty.")
 
-    storage_path = f"vector_indexes/{paper_id}.faiss"
+    # Objects are immutable. Metadata publication is fenced in the database,
+    # so an obsolete worker can only leave an orphan, never overwrite a live
+    # index that happens to use the same paper id.
+    storage_path = f"vector_indexes/{paper_id}/{uuid4().hex}.faiss"
     bucket = get_storage_bucket_client()
 
     bucket.upload(
@@ -18,7 +21,7 @@ def upload_vector_index(index_bytes: bytes, paper_id: UUID) -> str:
         file=index_bytes,
         file_options={
             "content-type": "application/octet-stream",
-            "upsert": "true",
+            "upsert": "false",
         },
     )
 

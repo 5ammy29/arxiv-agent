@@ -2,6 +2,14 @@ from typing import Any
 from uuid import UUID
 
 from project.infrastructure.database.connection import get_connection
+from project.infrastructure.database.paper_locks import (
+    PaperProcessingLease,
+    assert_current_paper_processing_lease,
+)
+
+
+class PaperContentChangedError(RuntimeError):
+    """Raised when an index was built from no-longer-current paper content."""
 
 
 def save_paper_vector_index(
@@ -12,6 +20,8 @@ def save_paper_vector_index(
     chunk_ids: list[int],
     content_fingerprint: str,
     chunking_fingerprint: str,
+    *,
+    lease: PaperProcessingLease,
 ) -> dict[str, Any]:
     """Persist metadata for a paper's FAISS index."""
     if not index_storage_path.strip():
@@ -31,8 +41,28 @@ def save_paper_vector_index(
 
     if not chunking_fingerprint.strip():
         raise ValueError("Chunking fingerprint must not be empty.")
+    if lease.paper_id != paper_id:
+        raise ValueError("Processing lease does not belong to this paper.")
 
     with get_connection() as connection:
+        assert_current_paper_processing_lease(connection, lease)
+        artifact = connection.execute(
+            """
+            SELECT content_fingerprint, chunking_fingerprint
+            FROM paper_artifacts
+            WHERE paper_id = %s
+            FOR UPDATE
+            """,
+            (paper_id,),
+        ).fetchone()
+        if (
+            artifact is None
+            or artifact["content_fingerprint"] != content_fingerprint
+            or artifact["chunking_fingerprint"] != chunking_fingerprint
+        ):
+            raise PaperContentChangedError(
+                "Cannot publish a vector index for stale paper content."
+            )
         row = connection.execute(
             """
             INSERT INTO paper_vector_indexes (
@@ -88,9 +118,16 @@ def get_paper_vector_index(paper_id: UUID) -> dict[str, Any] | None:
     return dict(row) if row is not None else None
 
 
-def delete_paper_vector_index(paper_id: UUID) -> str | None:
+def delete_paper_vector_index(
+    paper_id: UUID,
+    *,
+    lease: PaperProcessingLease,
+) -> str | None:
     """Delete index metadata and return the orphaned storage path, if any."""
+    if lease.paper_id != paper_id:
+        raise ValueError("Processing lease does not belong to this paper.")
     with get_connection() as connection:
+        assert_current_paper_processing_lease(connection, lease)
         row = connection.execute(
             """
             DELETE FROM paper_vector_indexes
