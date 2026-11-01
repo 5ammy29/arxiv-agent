@@ -3,7 +3,10 @@ from uuid import UUID
 
 import pytest
 
-from project.application.retrieval.vector_index_cache import VectorIndexCache
+from project.application.retrieval.vector_index_cache import (
+    VectorIndexCache,
+    _fallback_content_fingerprint,
+)
 from project.processing.chunker import TextChunk
 
 
@@ -39,7 +42,7 @@ def cache():
 
 
 @pytest.fixture
-def valid_metadata():
+def valid_metadata(chunks):
     return {
         "paper_id": PAPER_ID,
         "index_storage_path": STORAGE_PATH,
@@ -47,7 +50,18 @@ def valid_metadata():
         "embedding_dimension": EMBEDDING_DIMENSION,
         "chunk_ids": [0, 1],
         "chunk_count": 2,
+        "content_fingerprint": _fallback_content_fingerprint(chunks),
+        "chunking_fingerprint": "direct-chunks-v1",
     }
+
+
+@pytest.fixture(autouse=True)
+def discard_invalid_cache_metadata():
+    with (
+        patch("project.application.retrieval.vector_index_cache.delete_paper_vector_index"),
+        patch("project.application.retrieval.vector_index_cache.delete_vector_index"),
+    ):
+        yield
 
 
 def test_cache_miss_builds_and_persists_index(
@@ -78,13 +92,16 @@ def test_cache_miss_builds_and_persists_index(
     vector_store.add_chunks.assert_called_once_with(chunks)
     vector_store.serialize_index.assert_called_once_with()
     upload.assert_called_once_with(INDEX_BYTES, PAPER_ID)
-    save.assert_called_once_with(
-        paper_id=PAPER_ID,
-        index_storage_path=STORAGE_PATH,
-        embedding_model=MODEL_NAME,
-        embedding_dimension=EMBEDDING_DIMENSION,
-        chunk_ids=[0, 1],
-    )
+    assert save.call_count == 1
+    assert save.call_args.kwargs == {
+        "paper_id": PAPER_ID,
+        "index_storage_path": STORAGE_PATH,
+        "embedding_model": MODEL_NAME,
+        "embedding_dimension": EMBEDDING_DIMENSION,
+        "chunk_ids": [0, 1],
+        "content_fingerprint": _fallback_content_fingerprint(chunks),
+        "chunking_fingerprint": "direct-chunks-v1",
+    }
 
 
 def test_valid_cache_hit_restores_index_without_reembedding(
@@ -134,6 +151,8 @@ def test_valid_cache_hit_restores_index_without_reembedding(
         ("embedding_dimension", 384),
         ("chunk_count", 3),
         ("chunk_ids", [0, 99]),
+        ("content_fingerprint", None),
+        ("chunking_fingerprint", None),
     ],
 )
 def test_invalid_metadata_rebuilds_index(
@@ -245,6 +264,39 @@ def test_storage_download_failure_propagates(
     vector_store.add_chunks.assert_not_called()
 
 
+def test_missing_storage_object_rebuilds_index(
+    cache, chunks, vector_store, valid_metadata
+):
+    class MissingObjectError(Exception):
+        status_code = 404
+
+    with (
+        patch(
+            "project.application.retrieval.vector_index_cache."
+            "get_paper_vector_index",
+            return_value=valid_metadata,
+        ),
+        patch(
+            "project.application.retrieval.vector_index_cache."
+            "download_vector_index",
+            side_effect=MissingObjectError(),
+        ),
+        patch(
+            "project.application.retrieval.vector_index_cache."
+            "upload_vector_index",
+            return_value=STORAGE_PATH,
+        ),
+        patch(
+            "project.application.retrieval.vector_index_cache."
+            "save_paper_vector_index",
+        ) as save,
+    ):
+        assert cache.get_or_build_index(PAPER_ID, chunks, vector_store) is False
+
+    vector_store.add_chunks.assert_called_once_with(chunks)
+    save.assert_called_once()
+
+
 @pytest.mark.parametrize("paper_id", ["not-a-uuid", ""])
 def test_invalid_paper_id_is_rejected(
     cache, chunks, vector_store, paper_id
@@ -268,3 +320,29 @@ def test_duplicate_chunk_ids_are_rejected(cache, vector_store):
         cache.get_or_build_index(
             PAPER_ID, duplicate_chunks, vector_store
         )
+
+
+def test_metadata_persistence_failure_cleans_up_uploaded_index(
+    cache, chunks, vector_store
+):
+    with (
+        patch(
+            "project.application.retrieval.vector_index_cache.get_paper_vector_index",
+            return_value=None,
+        ),
+        patch(
+            "project.application.retrieval.vector_index_cache.upload_vector_index",
+            return_value=STORAGE_PATH,
+        ),
+        patch(
+            "project.application.retrieval.vector_index_cache.save_paper_vector_index",
+            side_effect=RuntimeError("Database unavailable"),
+        ),
+        patch(
+            "project.application.retrieval.vector_index_cache.delete_vector_index"
+        ) as delete,
+    ):
+        with pytest.raises(RuntimeError, match="Database unavailable"):
+            cache.get_or_build_index(PAPER_ID, chunks, vector_store)
+
+    delete.assert_called_once_with(STORAGE_PATH)

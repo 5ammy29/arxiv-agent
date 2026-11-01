@@ -33,6 +33,8 @@ def test_save_paper_vector_index(mock_get_connection):
         embedding_model="BAAI/bge-base-en-v1.5",
         embedding_dimension=768,
         chunk_ids=[0, 1, 2],
+        content_fingerprint="content-fingerprint",
+        chunking_fingerprint="chunking-fingerprint",
     )
 
     assert result == row
@@ -46,6 +48,8 @@ def test_save_paper_vector_index(mock_get_connection):
     assert params[3] == 768
     assert json.loads(params[4]) == [0, 1, 2]
     assert params[5] == 3
+    assert params[6] == "content-fingerprint"
+    assert params[7] == "chunking-fingerprint"
 
 
 @pytest.mark.parametrize(
@@ -67,6 +71,8 @@ def test_save_paper_vector_index_rejects_invalid_input(
         "embedding_model": "BAAI/bge-base-en-v1.5",
         "embedding_dimension": 768,
         "chunk_ids": [0, 1],
+        "content_fingerprint": "content-fingerprint",
+        "chunking_fingerprint": "chunking-fingerprint",
     }
     arguments.update(overrides)
 
@@ -121,15 +127,15 @@ def test_delete_paper_vector_index(mock_get_connection):
 
     connection = MagicMock()
     connection.execute.return_value.fetchone.return_value = {
-        "paper_id": paper_id
+        "index_storage_path": f"vector_indexes/{paper_id}.faiss"
     }
     mock_get_connection.return_value.__enter__.return_value = connection
 
-    assert delete_paper_vector_index(paper_id) is True
+    assert delete_paper_vector_index(paper_id) == connection.execute.return_value.fetchone.return_value["index_storage_path"]
 
     query, params = connection.execute.call_args.args
     assert "DELETE FROM paper_vector_indexes" in query
-    assert "RETURNING paper_id" in query
+    assert "RETURNING index_storage_path" in query
     assert params == (paper_id,)
 
 
@@ -139,4 +145,4 @@ def test_delete_nonexistent_paper_vector_index(mock_get_connection):
     connection.execute.return_value.fetchone.return_value = None
     mock_get_connection.return_value.__enter__.return_value = connection
 
-    assert delete_paper_vector_index(uuid4()) is False
+    assert delete_paper_vector_index(uuid4()) is None

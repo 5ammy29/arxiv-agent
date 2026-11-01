@@ -32,3 +32,11 @@ def download_vector_index(storage_path: str) -> bytes:
 
     bucket = get_storage_bucket_client()
     return bucket.download(storage_path)
+
+
+def delete_vector_index(storage_path: str) -> None:
+    """Remove an invalidated index object after metadata has been deleted."""
+    if not storage_path.strip():
+        raise ValueError("Vector index storage path must not be empty.")
+
+    get_storage_bucket_client().remove([storage_path])

@@ -10,6 +10,8 @@ def save_paper_vector_index(
     embedding_model: str,
     embedding_dimension: int,
     chunk_ids: list[int],
+    content_fingerprint: str,
+    chunking_fingerprint: str,
 ) -> dict[str, Any]:
     """Persist metadata for a paper's FAISS index."""
     if not index_storage_path.strip():
@@ -24,6 +26,12 @@ def save_paper_vector_index(
     if not chunk_ids:
         raise ValueError("Chunk IDs must not be empty.")
 
+    if not content_fingerprint.strip():
+        raise ValueError("Content fingerprint must not be empty.")
+
+    if not chunking_fingerprint.strip():
+        raise ValueError("Chunking fingerprint must not be empty.")
+
     with get_connection() as connection:
         row = connection.execute(
             """
@@ -33,9 +41,11 @@ def save_paper_vector_index(
                 embedding_model,
                 embedding_dimension,
                 chunk_ids,
-                chunk_count
+                chunk_count,
+                content_fingerprint,
+                chunking_fingerprint
             )
-            VALUES (%s, %s, %s, %s, %s::jsonb, %s)
+            VALUES (%s, %s, %s, %s, %s::jsonb, %s, %s, %s)
             ON CONFLICT (paper_id)
             DO UPDATE SET
                 index_storage_path = EXCLUDED.index_storage_path,
@@ -43,6 +53,8 @@ def save_paper_vector_index(
                 embedding_dimension = EXCLUDED.embedding_dimension,
                 chunk_ids = EXCLUDED.chunk_ids,
                 chunk_count = EXCLUDED.chunk_count,
+                content_fingerprint = EXCLUDED.content_fingerprint,
+                chunking_fingerprint = EXCLUDED.chunking_fingerprint,
                 updated_at = NOW()
             RETURNING *
             """,
@@ -53,6 +65,8 @@ def save_paper_vector_index(
                 embedding_dimension,
                 __import__("json").dumps(chunk_ids),
                 len(chunk_ids),
+                content_fingerprint,
+                chunking_fingerprint,
             ),
         ).fetchone()
 
@@ -74,16 +88,16 @@ def get_paper_vector_index(paper_id: UUID) -> dict[str, Any] | None:
     return dict(row) if row is not None else None
 
 
-def delete_paper_vector_index(paper_id: UUID) -> bool:
-    """Delete cached FAISS index metadata for a paper."""
+def delete_paper_vector_index(paper_id: UUID) -> str | None:
+    """Delete index metadata and return the orphaned storage path, if any."""
     with get_connection() as connection:
         row = connection.execute(
             """
             DELETE FROM paper_vector_indexes
             WHERE paper_id = %s
-            RETURNING paper_id
+            RETURNING index_storage_path
             """,
             (paper_id,),
         ).fetchone()
 
-    return row is not None
+    return row["index_storage_path"] if row is not None else None

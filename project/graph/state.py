@@ -16,6 +16,8 @@ class AgentState(MessagesState, total=False):
     selected_paper: Paper
     pdf_path: str
     chunks: list[TextChunk]
+    content_fingerprint: str
+    chunking_fingerprint: str
     results: list[SearchResult]
     answer: str
     error: str

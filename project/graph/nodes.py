@@ -1,6 +1,8 @@
+import logging
 import re
+from functools import partial
 
-from langchain_core.messages import AIMessage, HumanMessage
+from langchain_core.messages import AIMessage
 
 from project.application.retrieval.vector_index_cache import VectorIndexCache
 from project.application.papers.prepare_paper import PaperPreparationService
@@ -17,29 +19,43 @@ from project.processing.chunker import TextChunker
 from project.processing.pdf import PDFDownloadError, PDFParseError, PDFProcessor
 
 
+logger = logging.getLogger(__name__)
+
+
 def process_query(state: AgentState, query_processor: QueryProcessor):
     try:
         processed_query = query_processor.process(state["query"])
     except LLMError:
+        logger.exception("Query processing failed.")
         return {"error": "Failed to process query"}
     except (TypeError, ValueError) as error:
         return {"error": str(error)}
+    except Exception:
+        logger.exception("Unexpected query processing failure.")
+        return {"error": "Unexpected error while processing query"}
 
     return {"processed_query": processed_query}
 
 
 def route_after_query(state: AgentState):
-    if state.get("processed_query"):
-        return "search_arxiv"
+    if not state.get("processed_query"):
+        return "error"
 
-    return "error"
+    if state.get("paper"):
+        return "search_paper"
+
+    return "search_arxiv"
 
 
 def search_arxiv(state: AgentState, arxiv_client: ArxivClient):
     try:
         papers = arxiv_client.search_by_topic(state["processed_query"])
     except ArxivError:
+        logger.exception("arXiv search failed.")
         return {"papers": [], "error": "Failed to search arXiv"}
+    except Exception:
+        logger.exception("Unexpected arXiv search failure.")
+        return {"papers": [], "error": "Unexpected error while searching arXiv"}
 
     if not papers:
         return {"papers": [], "error": "No papers found for the query"}
@@ -71,7 +87,10 @@ def select_paper(state: AgentState):
     return {"selected_paper": best_paper}
 
 
-def download_pdf(state: AgentState, preparation_service: PaperPreparationService):
+def download_pdf(
+    state: AgentState,
+    preparation_service: PaperPreparationService,
+):
     paper = state["selected_paper"]
 
     try:
@@ -86,16 +105,24 @@ def download_pdf(state: AgentState, preparation_service: PaperPreparationService
             "pdf_url": paper.pdf_url,
             "categories": paper.categories,
         })
-    except (ValueError, KeyError) as exc:
-        return {"error": f"Failed to register paper: {exc}"}
+    except (ValueError, KeyError) as error:
+        logger.exception("Paper registration failed.")
+        return {"error": f"Failed to register paper: {error}"}
+    except Exception:
+        logger.exception("Unexpected database error during paper registration.")
+        return {"error": "Failed to register paper"}
 
     paper_id = paper_record["id"]
 
-    result = preparation_service.download(
-        pdf_url=paper.pdf_url,
-        arxiv_id=paper.arxiv_id,
-        paper_id=paper_id,
-    )
+    try:
+        result = preparation_service.download(
+            pdf_url=paper.pdf_url,
+            arxiv_id=paper.arxiv_id,
+            paper_id=paper_id,
+        )
+    except Exception:
+        logger.exception("Unexpected PDF preparation service failure.")
+        return {"error": "Failed to prepare paper PDF"}
 
     if result.error:
         return {"error": result.error}
@@ -106,19 +133,30 @@ def download_pdf(state: AgentState, preparation_service: PaperPreparationService
     }
 
 
-def parse_and_chunk(state: AgentState, preparation_service: PaperPreparationService):
+def parse_and_chunk(
+    state: AgentState,
+    preparation_service: PaperPreparationService,
+):
     paper = state["selected_paper"]
 
-    result = preparation_service.parse_and_chunk(
-        pdf_path=state["pdf_path"],
-        arxiv_id=paper.arxiv_id,
-        paper_id=state["paper_id"],
-    )
+    try:
+        result = preparation_service.parse_and_chunk(
+            pdf_path=state["pdf_path"],
+            arxiv_id=paper.arxiv_id,
+            paper_id=state["paper_id"],
+        )
+    except Exception:
+        logger.exception("Unexpected parse and chunk service failure.")
+        return {"chunks": [], "error": "Failed to process paper content"}
 
     if result.error:
         return {"chunks": result.chunks or [], "error": result.error}
 
-    return {"chunks": result.chunks}
+    return {
+        "chunks": result.chunks,
+        "content_fingerprint": result.content_fingerprint,
+        "chunking_fingerprint": result.chunking_fingerprint,
+    }
 
 
 def retrieve_chunks(
@@ -127,13 +165,26 @@ def retrieve_chunks(
     retriever: Retriever,
     vector_index_cache: VectorIndexCache,
 ):
-    vector_index_cache.get_or_build_index(
-        paper_id=state["paper_id"],
-        chunks=state["chunks"],
-        vector_store=vector_store,
-    )
+    try:
+        vector_index_cache.get_or_build_index(
+            paper_id=state["paper_id"],
+            chunks=state["chunks"],
+            vector_store=vector_store,
+            content_fingerprint=state.get("content_fingerprint"),
+            chunking_fingerprint=state.get("chunking_fingerprint"),
+        )
 
-    results = retriever.retrieve(state["processed_query"])
+        results = retriever.retrieve(state["processed_query"])
+
+    except Exception:
+        logger.exception(
+            "Index construction or retrieval failed for paper %s.",
+            state.get("paper_id"),
+        )
+        return {
+            "results": [],
+            "error": "Failed to build the search index or retrieve paper content",
+        }
 
     if not results:
         return {
@@ -154,7 +205,11 @@ def generate_answer(state: AgentState, llm: OllamaLLM):
             messages[:-1],
         )
     except LLMError:
+        logger.exception("Answer generation failed.")
         return {"error": "Failed to generate answer"}
+    except Exception:
+        logger.exception("Unexpected answer generation failure.")
+        return {"error": "Unexpected error while generating answer"}
 
     return {"answer": answer}
 
@@ -215,19 +270,10 @@ def search_paper(state: AgentState, arxiv_client: ArxivClient):
     try:
         paper = arxiv_client.search_by_id(state["paper"])
     except Exception:
+        logger.exception("Failed to find paper on arXiv.")
         return {"papers": [], "error": "Failed to find paper"}
 
     if paper is None:
         return {"papers": [], "error": "Paper not found"}
 
     return {"papers": [paper]}
-
-
-def route_after_query(state: AgentState):
-    if not state.get("processed_query"):
-        return "error"
-
-    if state.get("paper"):
-        return "search_paper"
-
-    return "search_arxiv"

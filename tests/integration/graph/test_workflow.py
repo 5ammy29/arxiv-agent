@@ -148,6 +148,8 @@ def test_full_workflow_execution():
             return [PDFPage(page=1, text="Test page content")]
 
     class FakeChunker:
+        configuration_fingerprint = "test-chunking-fingerprint"
+
         def chunk(self, pages):
             return [
                 TextChunk(
@@ -181,7 +183,7 @@ def test_full_workflow_execution():
             pass
 
     class FakeVectorIndexCache:
-        def get_or_build_index(self, paper_id, chunks, vector_store):
+        def get_or_build_index(self, paper_id, chunks, vector_store, **kwargs):
             vector_store.add_chunks(chunks)
 
     fake_chunk = TextChunk(
@@ -227,8 +229,22 @@ def test_full_workflow_execution():
             "project.application.papers.prepare_paper.upload_paper_pdf",
             return_value="papers/1234.5678v1.pdf",
         ),
-        patch("project.application.papers.prepare_paper.save_paper_artifact"),
+        patch(
+            "project.application.papers.prepare_paper.replace_paper_pdf",
+            return_value={
+                "old_pdf_storage_path": None,
+                "old_index_storage_path": None,
+            },
+        ),
         patch("project.application.papers.prepare_paper.save_paper_content"),
+        patch(
+            "project.application.papers.prepare_paper.get_paper_artifact",
+            return_value=None,
+        ),
+        patch(
+            "project.application.papers.prepare_paper.get_paper_content",
+            return_value={"pages": [], "chunks": []},
+        ),
     ):
         result = workflow.invoke({"query": "What did the paper find?"})
 
@@ -524,6 +540,8 @@ def test_parse_and_chunk_handles_pdf_parse_error():
             raise PDFParseError("Invalid PDF")
 
     class FakeChunker:
+        configuration_fingerprint = "test-chunking-fingerprint"
+
         def chunk(self, pages):
             raise AssertionError("Chunker should not run")
 
@@ -548,7 +566,13 @@ def test_parse_and_chunk_handles_pdf_parse_error():
         chunker=FakeChunker(),
     )
 
-    with patch("project.application.papers.prepare_paper.update_paper_status"):
+    with (
+        patch("project.application.papers.prepare_paper.update_paper_status"),
+        patch(
+            "project.application.papers.prepare_paper.get_paper_content",
+            return_value={"pages": [], "chunks": []},
+        ),
+    ):
         result = parse_and_chunk(state, service)
 
     assert result["chunks"] == []

@@ -35,7 +35,7 @@ def test_download_pdf(tmp_path, monkeypatch):
     processor = PDFProcessor(output_dir=str(tmp_path))
 
     response = MagicMock()
-    response.content = b"fake pdf content"
+    response.content = b"%PDF-1.7\nfake pdf content"
 
     mock_get = MagicMock(return_value=response)
     monkeypatch.setattr(pdf_module.requests, "get", mock_get)
@@ -54,7 +54,20 @@ def test_download_pdf(tmp_path, monkeypatch):
 
     assert pdf_path == tmp_path / "2401.12345.pdf"
     assert pdf_path.exists()
-    assert pdf_path.read_bytes() == b"fake pdf content"
+    assert pdf_path.read_bytes() == b"%PDF-1.7\nfake pdf content"
+
+
+@pytest.mark.parametrize("content", [b"", b"not a PDF"])
+def test_download_pdf_rejects_invalid_content(tmp_path, monkeypatch, content):
+    processor = PDFProcessor(output_dir=str(tmp_path))
+    response = MagicMock()
+    response.content = content
+    monkeypatch.setattr(pdf_module.requests, "get", MagicMock(return_value=response))
+
+    with pytest.raises(PDFDownloadError, match="not a valid PDF"):
+        processor.download_pdf("https://arxiv.org/pdf/2401.12345", "2401.12345")
+
+    assert not (tmp_path / "2401.12345.pdf").exists()
 
 
 def test_download_pdf_raises_download_error(tmp_path, monkeypatch):

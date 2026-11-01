@@ -14,6 +14,7 @@ from project.infrastructure.database.papers import (
     save_paper_artifact,
     save_paper_content,
     get_paper_content,
+    replace_paper_pdf,
 )
 
 
@@ -290,13 +291,23 @@ def test_save_paper_artifact(mock_get_connection):
     connection = MagicMock()
     mock_get_connection.return_value.__enter__.return_value = connection
 
-    save_paper_artifact(paper_id, "papers/1706.03762v7.pdf")
+    save_paper_artifact(
+        paper_id,
+        "papers/1706.03762v7.pdf",
+        "content-fingerprint",
+        "chunking-fingerprint",
+    )
 
     query, params = connection.execute.call_args.args
 
     assert "INSERT INTO paper_artifacts" in query
     assert "ON CONFLICT (paper_id)" in query
-    assert params == (paper_id, "papers/1706.03762v7.pdf")
+    assert params == (
+        paper_id,
+        "papers/1706.03762v7.pdf",
+        "content-fingerprint",
+        "chunking-fingerprint",
+    )
 
 
 @patch("project.infrastructure.database.papers.get_connection")
@@ -314,27 +325,34 @@ def test_save_paper_content(mock_get_connection):
         {"chunk_id": 1, "page_number": 2, "text": "Second chunk."},
     ]
 
-    save_paper_content(paper_id, pages, chunks)
+    save_paper_content(
+        paper_id,
+        pages,
+        chunks,
+        "content-fingerprint",
+        "chunking-fingerprint",
+    )
 
     queries = [
         call.args[0]
         for call in connection.execute.call_args_list
     ]
 
-    assert "DELETE FROM paper_pages" in queries[0]
+    assert "DELETE FROM paper_vector_indexes" in queries[0]
+    assert "DELETE FROM paper_pages" in queries[1]
     assert sum("INSERT INTO paper_pages" in query for query in queries) == 2
     assert sum("INSERT INTO paper_chunks" in query for query in queries) == 2
 
-    assert connection.execute.call_args_list[1].args[1] == (
+    assert connection.execute.call_args_list[2].args[1] == (
         paper_id, 1, "First page."
     )
-    assert connection.execute.call_args_list[2].args[1] == (
+    assert connection.execute.call_args_list[3].args[1] == (
         paper_id, 2, "Second page."
     )
-    assert connection.execute.call_args_list[3].args[1] == (
+    assert connection.execute.call_args_list[4].args[1] == (
         paper_id, 0, 1, "First chunk."
     )
-    assert connection.execute.call_args_list[4].args[1] == (
+    assert connection.execute.call_args_list[5].args[1] == (
         paper_id, 1, 2, "Second chunk."
     )
 
@@ -366,3 +384,128 @@ def test_get_paper_content(mock_get_connection):
         "chunks": chunks,
     }
     assert connection.execute.call_count == 2
+
+
+@patch("project.infrastructure.database.papers.get_connection")
+def test_save_paper_content_requires_existing_artifact(mock_get_connection):
+    paper_id = uuid4()
+
+    connection = MagicMock()
+    mock_get_connection.return_value.__enter__.return_value = connection
+
+    connection.execute.return_value.fetchone.return_value = None
+
+    pages = [{"page_number": 1, "text": "First page."}]
+    chunks = [{"chunk_id": 0, "page_number": 1, "text": "First chunk."}]
+
+    with pytest.raises(RuntimeError, match="paper artifact does not exist"):
+        save_paper_content(
+            paper_id,
+            pages,
+            chunks,
+            "content-fingerprint",
+            "chunking-fingerprint",
+        )
+
+
+# ------------------------------------------------------------
+# Atomic PDF replacement tests
+# ------------------------------------------------------------
+
+@patch("project.infrastructure.database.papers.get_connection")
+def test_replace_paper_pdf_invalidates_dependent_artifacts(mock_get_connection):
+    paper_id = uuid4()
+
+    connection = MagicMock()
+    mock_get_connection.return_value.__enter__.return_value = connection
+
+    connection.execute.side_effect = [
+        MagicMock(fetchone=MagicMock(return_value={"id": paper_id})),
+        MagicMock(
+            fetchone=MagicMock(
+                return_value={"pdf_storage_path": "papers/old.pdf"}
+            )
+        ),
+        MagicMock(
+            fetchone=MagicMock(
+                return_value={"index_storage_path": "indexes/old.faiss"}
+            )
+        ),
+        MagicMock(),
+        MagicMock(),
+    ]
+
+    result = replace_paper_pdf(paper_id, "papers/new.pdf")
+
+    assert result == {
+        "old_pdf_storage_path": "papers/old.pdf",
+        "old_index_storage_path": "indexes/old.faiss",
+    }
+
+    assert connection.execute.call_count == 5
+
+
+@patch("project.infrastructure.database.papers.get_connection")
+def test_replace_paper_pdf_registers_first_artifact(mock_get_connection):
+    paper_id = uuid4()
+
+    connection = MagicMock()
+    mock_get_connection.return_value.__enter__.return_value = connection
+
+    connection.execute.side_effect = [
+        MagicMock(fetchone=MagicMock(return_value={"id": paper_id})),
+        MagicMock(fetchone=MagicMock(return_value=None)),
+        MagicMock(fetchone=MagicMock(return_value=None)),
+        MagicMock(),
+        MagicMock(),
+    ]
+
+    result = replace_paper_pdf(paper_id, "papers/new.pdf")
+
+    assert result == {
+        "old_pdf_storage_path": None,
+        "old_index_storage_path": None,
+    }
+
+
+@patch("project.infrastructure.database.papers.get_connection")
+def test_replace_paper_pdf_rejects_missing_paper(mock_get_connection):
+    connection = MagicMock()
+    mock_get_connection.return_value.__enter__.return_value = connection
+
+    connection.execute.return_value.fetchone.return_value = None
+
+    with pytest.raises(ValueError, match="does not exist"):
+        replace_paper_pdf(uuid4(), "papers/new.pdf")
+
+    assert connection.execute.call_count == 1
+
+
+def test_replace_paper_pdf_rejects_empty_storage_path():
+    with pytest.raises(ValueError, match="must not be empty"):
+        replace_paper_pdf(uuid4(), "   ")
+
+
+@patch("project.infrastructure.database.papers.get_connection")
+def test_replace_paper_pdf_propagates_database_failure(mock_get_connection):
+    paper_id = uuid4()
+
+    connection = MagicMock()
+    context_manager = mock_get_connection.return_value
+    context_manager.__enter__.return_value = connection
+
+    connection.execute.side_effect = [
+        MagicMock(fetchone=MagicMock(return_value={"id": paper_id})),
+        MagicMock(
+            fetchone=MagicMock(
+                return_value={"pdf_storage_path": "papers/old.pdf"}
+            )
+        ),
+        RuntimeError("Database failure"),
+    ]
+
+    with pytest.raises(RuntimeError, match="Database failure"):
+        replace_paper_pdf(paper_id, "papers/new.pdf")
+
+    context_manager.__exit__.assert_called_once()
+    assert context_manager.__exit__.call_args.args[0] is RuntimeError

@@ -59,7 +59,7 @@ def register_paper(paper: dict[str, Any]) -> dict[str, Any]:
                 paper["updated"],
                 paper["url"],
                 paper["pdf_url"],
-                json.dumps(paper.get("categories", []))
+                json.dumps(paper.get("categories", [])),
             ),
         ).fetchone()
 
@@ -117,7 +117,11 @@ def update_paper_status(arxiv_id: str, status: str) -> dict[str, Any] | None:
     return dict(row) if row is not None else None
 
 
-def add_paper_to_session(session_id: UUID, paper_id: UUID, is_active: bool = False) -> None:
+def add_paper_to_session(
+    session_id: UUID,
+    paper_id: UUID,
+    is_active: bool = False,
+) -> None:
     with get_connection() as connection:
         session = connection.execute(
             "SELECT id FROM sessions WHERE id = %s FOR UPDATE",
@@ -232,19 +236,33 @@ def remove_paper_from_session(session_id: UUID, paper_id: UUID) -> bool:
     return row is not None
 
 
-def save_paper_artifact(paper_id: UUID, pdf_storage_path: str) -> None:
-    """Persist the storage path of a paper's PDF."""
+def save_paper_artifact(
+    paper_id: UUID,
+    pdf_storage_path: str,
+    content_fingerprint: str | None = None,
+    chunking_fingerprint: str | None = None,
+) -> None:
     with get_connection() as connection:
         connection.execute(
             """
-            INSERT INTO paper_artifacts (paper_id, pdf_storage_path)
-            VALUES (%s, %s)
+            INSERT INTO paper_artifacts (
+                paper_id, pdf_storage_path, content_fingerprint,
+                chunking_fingerprint
+            )
+            VALUES (%s, %s, %s, %s)
             ON CONFLICT (paper_id)
             DO UPDATE SET
                 pdf_storage_path = EXCLUDED.pdf_storage_path,
+                content_fingerprint = EXCLUDED.content_fingerprint,
+                chunking_fingerprint = EXCLUDED.chunking_fingerprint,
                 updated_at = NOW()
             """,
-            (paper_id, pdf_storage_path),
+            (
+                paper_id,
+                pdf_storage_path,
+                content_fingerprint,
+                chunking_fingerprint,
+            ),
         )
 
 
@@ -252,9 +270,19 @@ def save_paper_content(
     paper_id: UUID,
     pages: list[dict[str, Any]],
     chunks: list[dict[str, Any]],
-) -> None:
-    """Replace a paper's pages and chunks atomically."""
+    content_fingerprint: str,
+    chunking_fingerprint: str,
+) -> str | None:
     with get_connection() as connection:
+        previous_index = connection.execute(
+            """
+            DELETE FROM paper_vector_indexes
+            WHERE paper_id = %s
+            RETURNING index_storage_path
+            """,
+            (paper_id,),
+        ).fetchone()
+
         connection.execute(
             "DELETE FROM paper_pages WHERE paper_id = %s",
             (paper_id,),
@@ -285,9 +313,65 @@ def save_paper_content(
                 ),
             )
 
+        result = connection.execute(
+            """
+            UPDATE paper_artifacts
+            SET content_fingerprint = %s,
+                chunking_fingerprint = %s,
+                updated_at = NOW()
+            WHERE paper_id = %s
+            RETURNING paper_id
+            """,
+            (content_fingerprint, chunking_fingerprint, paper_id),
+        )
+
+        if result.fetchone() is None:
+            raise RuntimeError(
+                "Cannot save content: paper artifact does not exist."
+            )
+
+    return (
+        previous_index["index_storage_path"]
+        if previous_index is not None
+        else None
+    )
+
+
+def invalidate_paper_content(paper_id: UUID) -> str | None:
+    with get_connection() as connection:
+        previous_index = connection.execute(
+            """
+            DELETE FROM paper_vector_indexes
+            WHERE paper_id = %s
+            RETURNING index_storage_path
+            """,
+            (paper_id,),
+        ).fetchone()
+
+        connection.execute(
+            "DELETE FROM paper_pages WHERE paper_id = %s",
+            (paper_id,),
+        )
+
+        connection.execute(
+            """
+            UPDATE paper_artifacts
+            SET content_fingerprint = NULL,
+                chunking_fingerprint = NULL,
+                updated_at = NOW()
+            WHERE paper_id = %s
+            """,
+            (paper_id,),
+        )
+
+    return (
+        previous_index["index_storage_path"]
+        if previous_index is not None
+        else None
+    )
+
 
 def get_paper_content(paper_id: UUID) -> dict[str, list[dict[str, Any]]]:
-    """Retrieve a paper's persisted pages and chunks."""
     with get_connection() as connection:
         pages = connection.execute(
             """
@@ -316,11 +400,10 @@ def get_paper_content(paper_id: UUID) -> dict[str, list[dict[str, Any]]]:
 
 
 def get_paper_artifact(paper_id: UUID) -> dict[str, Any] | None:
-    """Retrieve a paper's persisted artifact metadata."""
     with get_connection() as connection:
         artifact = connection.execute(
             """
-            SELECT pdf_storage_path
+            SELECT pdf_storage_path, content_fingerprint, chunking_fingerprint
             FROM paper_artifacts
             WHERE paper_id = %s
             """,
@@ -328,3 +411,90 @@ def get_paper_artifact(paper_id: UUID) -> dict[str, Any] | None:
         ).fetchone()
 
     return dict(artifact) if artifact else None
+
+
+def replace_paper_pdf(
+    paper_id: UUID,
+    new_pdf_storage_path: str,
+) -> dict[str, str | None]:
+    if not new_pdf_storage_path.strip():
+        raise ValueError("PDF storage path must not be empty.")
+
+    with get_connection() as connection:
+        paper = connection.execute(
+            """
+            SELECT id
+            FROM papers
+            WHERE id = %s
+            FOR UPDATE
+            """,
+            (paper_id,),
+        ).fetchone()
+
+        if paper is None:
+            raise ValueError(f"Paper {paper_id} does not exist.")
+
+        previous_artifact = connection.execute(
+            """
+            SELECT pdf_storage_path
+            FROM paper_artifacts
+            WHERE paper_id = %s
+            FOR UPDATE
+            """,
+            (paper_id,),
+        ).fetchone()
+
+        previous_pdf_path = (
+            previous_artifact["pdf_storage_path"]
+            if previous_artifact is not None
+            else None
+        )
+
+        previous_index = connection.execute(
+            """
+            DELETE FROM paper_vector_indexes
+            WHERE paper_id = %s
+            RETURNING index_storage_path
+            """,
+            (paper_id,),
+        ).fetchone()
+
+        connection.execute(
+            """
+            DELETE FROM paper_pages
+            WHERE paper_id = %s
+            """,
+            (paper_id,),
+        )
+
+        connection.execute(
+            """
+            INSERT INTO paper_artifacts (
+                paper_id,
+                pdf_storage_path,
+                content_fingerprint,
+                chunking_fingerprint
+            )
+            VALUES (%s, %s, NULL, NULL)
+            ON CONFLICT (paper_id)
+            DO UPDATE SET
+                pdf_storage_path = EXCLUDED.pdf_storage_path,
+                content_fingerprint = NULL,
+                chunking_fingerprint = NULL,
+                updated_at = NOW()
+            """,
+            (paper_id, new_pdf_storage_path),
+        )
+
+    return {
+        "old_pdf_storage_path": (
+            previous_pdf_path
+            if previous_pdf_path != new_pdf_storage_path
+            else None
+        ),
+        "old_index_storage_path": (
+            previous_index["index_storage_path"]
+            if previous_index is not None
+            else None
+        ),
+    }

@@ -2,6 +2,10 @@ import re
 from dataclasses import dataclass
 
 from project.processing.pdf import PDFPage
+from project.processing.fingerprints import (
+    CHUNKING_ALGORITHM_VERSION,
+    chunking_fingerprint,
+)
 
 
 @dataclass
@@ -12,7 +16,14 @@ class TextChunk:
 
 
 class TextChunker:
-    def __init__(self, chunk_size: int = 1500, chunk_overlap: int = 200):
+    algorithm_version = CHUNKING_ALGORITHM_VERSION
+
+    def __init__(
+        self,
+        chunk_size: int = 1500,
+        chunk_overlap: int = 200,
+        algorithm_version: str = CHUNKING_ALGORITHM_VERSION,
+    ):
         if chunk_size <= 0:
             raise ValueError("chunk_size must be positive")
 
@@ -24,6 +35,15 @@ class TextChunker:
 
         self.chunk_size = chunk_size
         self.chunk_overlap = chunk_overlap
+        self.algorithm_version = algorithm_version
+
+    @property
+    def configuration_fingerprint(self) -> str:
+        return chunking_fingerprint(
+            chunk_size=self.chunk_size,
+            chunk_overlap=self.chunk_overlap,
+            algorithm_version=self.algorithm_version,
+        )
 
     def chunk(self, pages: list[PDFPage]) -> list[TextChunk]:
         chunks = []

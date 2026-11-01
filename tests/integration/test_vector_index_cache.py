@@ -5,7 +5,10 @@ import faiss
 import numpy as np
 import pytest
 
-from project.application.retrieval.vector_index_cache import VectorIndexCache
+from project.application.retrieval.vector_index_cache import (
+    VectorIndexCache,
+    _fallback_content_fingerprint,
+)
 from project.processing.chunker import TextChunk
 
 
@@ -99,7 +102,18 @@ def make_metadata(paper_id, chunks, storage_path="vector_indexes/test.faiss"):
         "embedding_dimension": 3,
         "chunk_ids": [chunk.chunk_id for chunk in chunks],
         "chunk_count": len(chunks),
+        "content_fingerprint": _fallback_content_fingerprint(chunks),
+        "chunking_fingerprint": "direct-chunks-v1",
     }
+
+
+@pytest.fixture(autouse=True)
+def discard_invalid_cache_metadata():
+    with (
+        patch("project.application.retrieval.vector_index_cache.delete_paper_vector_index"),
+        patch("project.application.retrieval.vector_index_cache.delete_vector_index"),
+    ):
+        yield
 
 
 def test_cache_miss_persists_index_and_metadata(chunks):

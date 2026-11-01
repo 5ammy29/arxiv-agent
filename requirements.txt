@@ -3,6 +3,7 @@ langgraph==1.2.11
 pymupdf==1.28.2
 pytest==9.1.1
 requests==2.34.2
+arxiv
 sentence-transformers==6.1.0
 psycopg[binary,pool]
 supabase
