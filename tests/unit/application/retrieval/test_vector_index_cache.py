@@ -69,8 +69,12 @@ def valid_metadata(chunks):
 @pytest.fixture(autouse=True)
 def discard_invalid_cache_metadata():
     with (
-        patch("project.application.retrieval.vector_index_cache.delete_paper_vector_index"),
-        patch("project.application.retrieval.vector_index_cache.delete_vector_index"),
+        patch(
+            "project.application.retrieval.vector_index_cache.delete_paper_vector_index"
+        ),
+        patch(
+            "project.application.retrieval.vector_index_cache.delete_vector_index"
+        ),
     ):
         yield
 
@@ -131,12 +135,15 @@ def test_cache_miss_is_observable(cache, chunks, vector_store, caplog):
             "project.application.retrieval.vector_index_cache.upload_vector_index",
             return_value=STORAGE_PATH,
         ),
-        patch("project.application.retrieval.vector_index_cache.save_paper_vector_index"),
+        patch(
+            "project.application.retrieval.vector_index_cache.save_paper_vector_index"
+        ),
     ):
         cache.get_or_build_index(PAPER_ID, chunks, vector_store)
 
     assert any(
-        "vector_index_cache_miss" in record.message and "no_metadata" in record.message
+        "vector_index_cache_miss" in record.message
+        and "no_metadata" in record.message
         for record in caplog.records
     )
 
@@ -190,6 +197,8 @@ def test_valid_cache_hit_restores_index_without_reembedding(
         ("chunk_ids", [0, 99]),
         ("content_fingerprint", None),
         ("chunking_fingerprint", None),
+        ("content_fingerprint", "stale-content-fingerprint"),
+        ("chunking_fingerprint", "stale-chunking-fingerprint"),
     ],
 )
 def test_invalid_metadata_rebuilds_index(
@@ -211,7 +220,7 @@ def test_invalid_metadata_rebuilds_index(
         patch(
             "project.application.retrieval.vector_index_cache."
             "save_paper_vector_index"
-        ),
+        ) as save,
     ):
         restored = cache.get_or_build_index(
             str(PAPER_ID), chunks, vector_store
@@ -221,6 +230,19 @@ def test_invalid_metadata_rebuilds_index(
     vector_store.add_chunks.assert_called_once_with(chunks)
     vector_store.serialize_index.assert_called_once_with()
     vector_store.load_index.assert_not_called()
+
+    save.assert_called_once()
+
+    saved_metadata = {
+        key: value
+        for key, value in save.call_args.kwargs.items()
+        if key != "lease"
+    }
+
+    assert saved_metadata["content_fingerprint"] == (
+        _fallback_content_fingerprint(chunks)
+    )
+    assert saved_metadata["chunking_fingerprint"] == "direct-chunks-v1"
 
 
 def test_corrupt_index_rebuilds_and_updates_metadata(
@@ -383,3 +405,49 @@ def test_metadata_persistence_failure_cleans_up_uploaded_index(
             cache.get_or_build_index(PAPER_ID, chunks, vector_store)
 
     delete.assert_called_once_with(STORAGE_PATH)
+
+
+def test_embedding_failure_does_not_upload_or_publish_index(
+    cache, chunks, vector_store
+):
+    vector_store.add_chunks.side_effect = RuntimeError("embedding unavailable")
+
+    with (
+        patch(
+            "project.application.retrieval.vector_index_cache.get_paper_vector_index",
+            return_value=None,
+        ),
+        patch(
+            "project.application.retrieval.vector_index_cache.upload_vector_index"
+        ) as upload,
+        patch(
+            "project.application.retrieval.vector_index_cache.save_paper_vector_index"
+        ) as save,
+    ):
+        with pytest.raises(RuntimeError, match="embedding unavailable"):
+            cache.get_or_build_index(PAPER_ID, chunks, vector_store)
+
+    upload.assert_not_called()
+    save.assert_not_called()
+
+
+def test_index_storage_upload_failure_does_not_publish_metadata(
+    cache, chunks, vector_store
+):
+    with (
+        patch(
+            "project.application.retrieval.vector_index_cache.get_paper_vector_index",
+            return_value=None,
+        ),
+        patch(
+            "project.application.retrieval.vector_index_cache.upload_vector_index",
+            side_effect=RuntimeError("storage unavailable"),
+        ),
+        patch(
+            "project.application.retrieval.vector_index_cache.save_paper_vector_index"
+        ) as save,
+    ):
+        with pytest.raises(RuntimeError, match="storage unavailable"):
+            cache.get_or_build_index(PAPER_ID, chunks, vector_store)
+
+    save.assert_not_called()

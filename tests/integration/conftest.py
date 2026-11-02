@@ -37,6 +37,8 @@ def integration_database_url(monkeypatch: pytest.MonkeyPatch) -> Iterator[str]:
                 SELECT to_regclass('public.papers') AS papers,
                        to_regclass('public.paper_processing_locks') AS locks,
                        to_regclass('public.paper_artifacts') AS artifacts,
+                       to_regclass('public.paper_pages') AS pages,
+                       to_regclass('public.paper_chunks') AS chunks,
                        to_regclass('public.paper_vector_indexes') AS indexes
                 """
             ).fetchone()
