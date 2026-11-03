@@ -44,6 +44,8 @@ def build_workflow(
     retriever=None,
     answer_builder=None,
     checkpointer=None,
+    candidates_per_paper: int = 5,
+    final_top_k: int = 5,
 ):
     if arxiv_client is None:
         arxiv_client = ArxivClient()
@@ -109,6 +111,8 @@ def build_workflow(
             vector_store=vector_store,
             retriever=retriever,
             vector_index_cache=vector_index_cache,
+            candidates_per_paper=candidates_per_paper,
+            final_top_k=final_top_k,
         ),
     )
     graph.add_node(
@@ -128,6 +132,7 @@ def build_workflow(
         {
             "search_arxiv": "search_arxiv",
             "search_paper": "search_paper",
+            "retrieve_chunks": "retrieve_chunks",
             "error": "error",
         },
     )

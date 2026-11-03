@@ -88,7 +88,11 @@ Question:
         if results:
             for result in results:
                 context.append(
-                    f"[Passage | Page {result.chunk.page}]\n{result.chunk.text}"
+                    "[Passage | "
+                    f"Paper: {result.paper_title or result.arxiv_id or 'unknown'} | "
+                    f"arXiv: {result.arxiv_id or 'unknown'} | "
+                    f"Page {result.chunk.page} | Chunk {result.chunk.chunk_id}]\n"
+                    f"{result.chunk.text}"
                 )
 
         context_text = "\n\n".join(context)
@@ -103,10 +107,16 @@ First, determine what the current question asks.
    If the history does not contain the answer, say you cannot determine it
    from the conversation history.
 
-2. If the user asks a research question, answer using the retrieved passages.
+2. If the user asks a research question, answer using only the retrieved passages.
    Do not invent facts or treat previous assistant answers as verified evidence.
-   Cite supporting evidence using the provided page numbers.
-   If the passages are insufficient, say so.
+   Every factual claim must be supported by the retrieved evidence. Cite the
+   supporting paper title, arXiv ID, page number, and chunk reference.
+   When synthesizing or comparing papers, clearly attribute each claim to
+   the paper that supports it. Use evidence from every relevant paper.
+   Do not attribute a finding from one paper to another paper.
+   Do not use unsupported background knowledge to fill evidence gaps.
+   If the retrieved passages are insufficient to answer the question,
+   explicitly state which information is missing.
 
 3. For a follow-up research question, use conversation history to resolve
    references, but use retrieved passages as evidence for factual claims.

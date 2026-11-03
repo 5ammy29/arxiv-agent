@@ -17,12 +17,12 @@ def create_session(user_id: UUID, title: str | None = None) -> dict:
         ).fetchone()
 
     return {
-        "id": row[0],
-        "user_id": row[1],
-        "title": row[2],
-        "status": row[3],
-        "created_at": row[4],
-        "updated_at": row[5],
+        "id": row["id"],
+        "user_id": row["user_id"],
+        "title": row["title"],
+        "status": row["status"],
+        "created_at": row["created_at"],
+        "updated_at": row["updated_at"],
     }
 
 
@@ -41,12 +41,12 @@ def get_session(session_id: UUID, user_id: UUID) -> dict | None:
         return None
 
     return {
-        "id": row[0],
-        "user_id": row[1],
-        "title": row[2],
-        "status": row[3],
-        "created_at": row[4],
-        "updated_at": row[5],
+        "id": row["id"],
+        "user_id": row["user_id"],
+        "title": row["title"],
+        "status": row["status"],
+        "created_at": row["created_at"],
+        "updated_at": row["updated_at"],
     }
 
 
@@ -67,12 +67,12 @@ def list_sessions(user_id: UUID, limit: int = 20, offset: int = 0) -> list[dict]
 
     for row in rows:
         session = {
-            "id": row[0],
-            "user_id": row[1],
-            "title": row[2],
-            "status": row[3],
-            "created_at": row[4],
-            "updated_at": row[5],
+            "id": row["id"],
+            "user_id": row["user_id"],
+            "title": row["title"],
+            "status": row["status"],
+            "created_at": row["created_at"],
+            "updated_at": row["updated_at"],
         }
 
         sessions.append(session)

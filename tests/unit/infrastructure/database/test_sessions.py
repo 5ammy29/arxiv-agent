@@ -13,14 +13,14 @@ USER_B = UUID("bed68ecc-e5a7-420f-b861-697d62a432a1")
 
 
 def make_row(session_id, user_id, title="Test session"):
-    return (
-        session_id,
-        user_id,
-        title,
-        "active",
-        "created_at",
-        "updated_at",
-    )
+    return {
+        "id": session_id,
+        "user_id": user_id,
+        "title": title,
+        "status": "active",
+        "created_at": "created_at",
+        "updated_at": "updated_at",
+    }
 
 
 @patch("project.infrastructure.database.sessions.uuid4")

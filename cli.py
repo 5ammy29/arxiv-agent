@@ -15,6 +15,10 @@ def run_query(workflow, query, paper_or_topic, config):
         input_state = {
             "query": query,
             "messages": [HumanMessage(content=query)],
+            "session_id": config["configurable"]["thread_id"],
+            # Explicitly clear a previous paper selector restored by the
+            # checkpointer so a follow-up uses all session papers.
+            "paper": None,
         }
 
         if is_arxiv_identifier(paper_or_topic):

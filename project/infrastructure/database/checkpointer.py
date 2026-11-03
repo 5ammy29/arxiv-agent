@@ -11,7 +11,9 @@ from project.config import get_database_url
 def get_checkpointer() -> Generator[PostgresSaver, None, None]:
     serializer = JsonPlusSerializer(
         allowed_msgpack_modules=[
-            ("project.nodes.chunker", "TextChunk"),
+            # Compatibility only for checkpoints written before graph evidence
+            # became plain dictionaries. New checkpoints do not use this.
+            ("project.processing.chunker", "TextChunk"),
             ("project.nodes.arxiv", "Paper"),
             ("project.nodes.vector_store", "SearchResult"),
         ]

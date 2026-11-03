@@ -12,6 +12,9 @@ class SearchResult:
     chunk: TextChunk
     score: float
     rerank_score: float | None = None
+    paper_id: str | None = None
+    arxiv_id: str | None = None
+    paper_title: str | None = None
 
 
 class VectorStore:

@@ -198,6 +198,9 @@ def test_full_workflow_execution():
         def load_index(self, index_bytes, chunks, chunk_ids):
             pass
 
+        def search(self, query, top_k=5):
+            return [fake_result]
+
     class FakeVectorIndexCache:
         def get_or_build_index(self, paper_id, chunks, vector_store, **kwargs):
             vector_store.add_chunks(chunks)
@@ -214,6 +217,8 @@ def test_full_workflow_execution():
     )
 
     class FakeRetriever:
+        reranker = None
+
         def retrieve(self, query):
             return [fake_result]
 
@@ -273,8 +278,8 @@ def test_full_workflow_execution():
     assert result["selected_paper"].arxiv_id == "1234.5678v1"
     assert result["pdf_path"] == "paper.pdf"
     assert len(result["chunks"]) == 1
-    assert result["chunks"][0].text == "Test page content"
-    assert result["results"] == [fake_result]
+    assert result["chunks"][0]["text"] == "Test page content"
+    assert result["results"][0]["chunk"]["text"] == "Test evidence"
     assert "## Answer" in result["answer"]
     assert "final answer" in result["answer"]
     assert "## Evidence" in result["answer"]

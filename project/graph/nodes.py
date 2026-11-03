@@ -1,22 +1,32 @@
 import logging
 import re
-from functools import partial
+from uuid import UUID
 
 from langchain_core.messages import AIMessage
 
 from project.application.retrieval.vector_index_cache import VectorIndexCache
+from project.application.retrieval.evidence import (
+    chunk_from_record,
+    chunk_to_record,
+    result_from_record,
+    result_to_record,
+)
 from project.application.papers.prepare_paper import PaperPreparationService
 from project.graph.state import AgentState
-from project.infrastructure.database.papers import register_paper
+from project.infrastructure.database.papers import (
+    add_paper_to_session,
+    get_paper_artifact,
+    get_paper_content,
+    get_session_papers,
+    register_paper,
+)
 from project.nodes.answer import AnswerBuilder
 from project.nodes.arxiv import ArxivClient, ArxivError
 from project.nodes.llm import LLMError, OllamaLLM
 from project.nodes.query import QueryProcessor
-from project.nodes.reranker import Reranker
 from project.nodes.retriever import Retriever
 from project.nodes.vector_store import VectorStore
-from project.processing.chunker import TextChunker
-from project.processing.pdf import PDFDownloadError, PDFParseError, PDFProcessor
+from project.processing.chunker import TextChunk
 
 
 logger = logging.getLogger(__name__)
@@ -43,6 +53,12 @@ def route_after_query(state: AgentState):
 
     if state.get("paper"):
         return "search_paper"
+
+    # A resumed thread has its current paper and serializable chunks restored
+    # from the checkpoint.  Continue against the session rather than silently
+    # initiating a new single-paper/topic search.
+    if state.get("session_id") and state.get("paper_id") and state.get("chunks"):
+        return "retrieve_chunks"
 
     return "search_arxiv"
 
@@ -127,10 +143,23 @@ def prepare_paper(
     if result.error:
         return {"error": result.error}
 
+    session_id = state.get("session_id")
+
+    if session_id:
+        try:
+            add_paper_to_session(
+                session_id=UUID(str(session_id)),
+                paper_id=UUID(str(paper_id)),
+                is_active=True,
+            )
+        except Exception:
+            logger.exception("Failed to associate paper with session.")
+            return {"error": "Failed to associate paper with session"}
+
     return {
         "pdf_path": result.pdf_path,
         "paper_id": str(paper_id),
-        "chunks": result.chunks,
+        "chunks": [chunk_to_record(chunk) for chunk in result.chunks or []],
         "content_fingerprint": result.content_fingerprint,
         "chunking_fingerprint": result.chunking_fingerprint,
     }
@@ -153,10 +182,13 @@ def parse_and_chunk(
         return {"chunks": [], "error": "Failed to process paper content"}
 
     if result.error:
-        return {"chunks": result.chunks or [], "error": result.error}
+        return {
+            "chunks": [chunk_to_record(chunk) for chunk in result.chunks or []],
+            "error": result.error,
+        }
 
     return {
-        "chunks": result.chunks,
+        "chunks": [chunk_to_record(chunk) for chunk in result.chunks or []],
         "content_fingerprint": result.content_fingerprint,
         "chunking_fingerprint": result.chunking_fingerprint,
     }
@@ -167,35 +199,72 @@ def retrieve_chunks(
     vector_store: VectorStore,
     retriever: Retriever,
     vector_index_cache: VectorIndexCache,
+    candidates_per_paper: int = 5,
+    final_top_k: int = 5,
 ):
+    session_id = state.get("session_id")
     try:
-        vector_index_cache.get_or_build_index(
-            paper_id=state["paper_id"],
-            chunks=state["chunks"],
-            vector_store=vector_store,
-            content_fingerprint=state.get("content_fingerprint"),
-            chunking_fingerprint=state.get("chunking_fingerprint"),
-        )
-
-        results = retriever.retrieve(state["processed_query"])
-
+        session_papers = get_session_papers(UUID(str(session_id))) if session_id else []
     except Exception:
-        logger.exception(
-            "Index construction or retrieval failed for paper %s.",
-            state.get("paper_id"),
-        )
-        return {
-            "results": [],
-            "error": "Failed to build the search index or retrieve paper content",
-        }
+        logger.exception("Failed to resolve session papers | session_id=%s", session_id)
+        return {"results": [], "error": "Failed to resolve the session's papers"}
 
-    if not results:
-        return {
-            "results": [],
-            "error": "No relevant information was found in the paper",
-        }
+    current_paper_id = str(state["paper_id"])
+    if not session_papers:
+        selected = state["selected_paper"]
+        session_papers = [{
+            "id": current_paper_id,
+            "arxiv_id": selected.arxiv_id,
+            "title": selected.title,
+        }]
+    logger.info("Session retrieval papers resolved | session_id=%s | papers=%s", session_id, [str(p["id"]) for p in session_papers])
 
-    return {"results": results}
+    candidates = []
+    for paper in session_papers:
+        paper_id = str(paper["id"])
+        try:
+            if paper_id == current_paper_id:
+                chunks = [chunk_from_record(chunk) for chunk in state.get("chunks", [])]
+                content_fingerprint = state.get("content_fingerprint")
+                chunking_fingerprint = state.get("chunking_fingerprint")
+            else:
+                content = get_paper_content(UUID(paper_id))
+                artifact = get_paper_artifact(UUID(paper_id)) or {}
+                chunks = [TextChunk(chunk_id=row["chunk_id"], page=row["page_number"], text=row["text"]) for row in content["chunks"]]
+                content_fingerprint = artifact.get("content_fingerprint")
+                chunking_fingerprint = artifact.get("chunking_fingerprint")
+            if not chunks:
+                logger.warning("Paper retrieval skipped | paper_id=%s | reason=no_chunks", paper_id)
+                continue
+            vector_index_cache.get_or_build_index(
+                paper_id=paper_id, chunks=chunks, vector_store=vector_store,
+                content_fingerprint=content_fingerprint, chunking_fingerprint=chunking_fingerprint,
+            )
+            paper_results = vector_store.search(state["processed_query"], top_k=candidates_per_paper)
+            for result in paper_results:
+                result.paper_id, result.arxiv_id, result.paper_title = paper_id, paper["arxiv_id"], paper["title"]
+            candidates.extend(paper_results)
+            logger.info("Paper retrieval completed | paper_id=%s | arxiv_id=%s | candidates=%d", paper_id, paper["arxiv_id"], len(paper_results))
+        except Exception:
+            logger.exception("Paper retrieval failed | paper_id=%s | session_id=%s", paper_id, session_id)
+
+    deduplicated = []
+    seen = set()
+    for result in candidates:
+        key = (result.paper_id, result.chunk.chunk_id)
+        if key not in seen:
+            seen.add(key)
+            deduplicated.append(result)
+    logger.info("Session candidates merged | total=%d | deduplicated=%d", len(candidates), len(deduplicated))
+    if not deduplicated:
+        return {"results": [], "error": "No relevant information was found in the session's papers"}
+
+    ranked = retriever.reranker.rerank(state["processed_query"], deduplicated) if retriever.reranker else sorted(deduplicated, key=lambda result: result.score, reverse=True)
+    final_results = ranked[:final_top_k]
+    logger.info("Global reranking completed | candidates=%d | final_hits=%d", len(deduplicated), len(final_results))
+    for rank, result in enumerate(final_results, 1):
+        logger.info("Final evidence | rank=%d | paper_id=%s | chunk_id=%s", rank, result.paper_id, result.chunk.chunk_id)
+    return {"results": [result_to_record(result) for result in final_results]}
 
 
 def generate_answer(state: AgentState, llm: OllamaLLM):
@@ -204,7 +273,7 @@ def generate_answer(state: AgentState, llm: OllamaLLM):
 
         answer = llm.generate_answer(
             state["query"],
-            state["results"],
+            [result_from_record(result) for result in state["results"]],
             messages[:-1],
         )
     except LLMError:
@@ -231,8 +300,8 @@ def handle_error(state: AgentState):
 def build_answer(state: AgentState, answer_builder: AnswerBuilder):
     answer = answer_builder.build(
         state["answer"],
-        state["selected_paper"],
-        state["results"],
+        state.get("selected_paper"),
+        [result_from_record(result) for result in state["results"]],
     )
 
     return {

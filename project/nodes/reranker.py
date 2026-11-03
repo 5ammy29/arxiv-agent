@@ -36,6 +36,9 @@ class Reranker:
                     chunk=result.chunk,
                     score=result.score,
                     rerank_score=float(score),
+                    paper_id=result.paper_id,
+                    arxiv_id=result.arxiv_id,
+                    paper_title=result.paper_title,
                 )
             )
 
