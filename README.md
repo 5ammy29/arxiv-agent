@@ -1,578 +1,174 @@
 # arXiv Paper Digest & QA Agent
 
-An end-to-end research agent that acts as an end-to-end workflow taking in either an **arXiv ID, arXiv URL, or natural-language research topic**, fetching an appropriate paper, parsing the PDF, indexing it as vectors for querying, producing an executive summary, and answering questions on the paper chosen.
+A session-based research assistant for multi-paper research and evidence-grounded question answering over arXiv papers. Built with **FastAPI, LangGraph, RAG, and FAISS**, the project focuses on retrieval quality, persistent research artifacts, and modular backend architecture.
 
-The system is implemented as a **LangGraph stateful workflow** that utilizes local or open-source tools for retrieval and LLMs for summarization and question answering.
+**V2 is under active development.**
+
+[Repository](https://github.com/5ammy29/arxiv-agent) · [V2 Branch](https://github.com/5ammy29/arxiv-agent/tree/v2)
 
 ---
+
+## Overview
+
+The arXiv Agent processes research papers and enables users to ask questions grounded in their content. V2 extends the original single-paper workflow toward session-based, multi-paper research with persistent storage and caching.
+
+The system combines semantic retrieval with Cross-Encoder reranking to improve the relevance of evidence supplied to the language model.
 
 ## Features
 
-* **Flexible input**
-
-  * arXiv ID
-  * arXiv URL
-  * Natural-language research topic
-
-* **Query understanding**
-
-  * Converts a broad research request into a useful search query.
-
-* **arXiv retrieval**
-
-  * Searches arXiv and selects a relevant paper for processing.
-
-* **PDF processing**
-
-  * Downloads and parses the selected paper locally.
-
-* **Document chunking**
-
-  * Splits the paper into searchable chunks.
-
-* **Semantic retrieval**
-
-  * Generates embeddings using `sentence-transformers`.
-  * Stores vectors locally using FAISS.
-
-* **Reranking**
-
-  * Reranks retrieved chunks to improve the relevance of the evidence supplied to the LLM.
-
-* **Executive briefing**
-
-  * Produces a concise research briefing from the selected paper.
-
-* **Grounded QA**
-
-  * Allows follow-up questions about the paper.
-  * Answers are grounded in retrieved paper content rather than relying only on the model's prior knowledge.
-
-* **LangGraph orchestration**
-
-  * Uses an explicit state graph to coordinate retrieval, processing, indexing, briefing, and QA.
-
-* **Failure handling**
-
-  * Handles invalid inputs and failures during retrieval, downloading, parsing, and processing.
+- **Multi-Paper Research:** Supports research workflows involving multiple arXiv papers.
+- **Session-Based Research:** Associates papers and research context with individual sessions.
+- **Evidence-Grounded QA:** Generates answers using retrieved paper content.
+- **Semantic Retrieval:** Embedding-based retrieval using FAISS.
+- **Cross-Encoder Reranking:** Refines retrieved evidence rankings.
+- **Paper Registry:** Tracks papers using canonical arXiv identifiers and versions.
+- **Persistent Storage:** Integrates PostgreSQL and Supabase Storage for research artifacts.
+- **Stateful Workflow Orchestration:** Uses LangGraph to coordinate query processing, paper retrieval, document processing, and answer generation.
+- **Modular Architecture:** Separates graph orchestration, application logic, processing, and infrastructure.
 
 ---
 
-# Architecture
+## Architecture
 
-The agent follows a stateful pipeline:
+The system uses LangGraph for workflow orchestration, with application and infrastructure layers handling paper processing, retrieval, and persistence.
 
-```text
-                         ┌──────────────────────┐
-                         │      User Input      │
-                         │ arXiv ID / URL /     │
-                         │     Research Topic   │
-                         └──────────┬───────────┘
-                                    │
-                                    ▼
-                         ┌──────────────────────┐
-                         │  Query Understanding │
-                         │                      │
-                         │ Normalize / rewrite  │
-                         │ the research query   │
-                         └──────────┬───────────┘
-                                    │
-                                    ▼
-                         ┌──────────────────────┐
-                         │   arXiv Retrieval    │
-                         │                      │
-                         │ Search arXiv API     │
-                         └──────────┬───────────┘
-                                    │
-                                    ▼
-                         ┌──────────────────────┐
-                         │   Paper Selection    │
-                         │                      │
-                         │ Select paper to      │
-                         │ process              │
-                         └──────────┬───────────┘
-                                    │
-                                    ▼
-                         ┌──────────────────────┐
-                         │   PDF Fetch / Parse  │
-                         │                      │
-                         │ Download PDF and     │
-                         │ extract text         │
-                         └──────────┬───────────┘
-                                    │
-                                    ▼
-                         ┌──────────────────────┐
-                         │  Chunk + Embed       │
-                         │                      │
-                         │ Split paper into     │
-                         │ chunks and generate  │
-                         │ embeddings           │
-                         └──────────┬───────────┘
-                                    │
-                                    ▼
-                         ┌──────────────────────┐
-                         │    Vector Store      │
-                         │                      │
-                         │ Local FAISS index    │
-                         └──────────┬───────────┘
-                                    │
-                                    ▼
-                         ┌──────────────────────┐
-                         │ Executive Briefing   │
-                         │                      │
-                         │ Generate concise     │
-                         │ paper briefing       │
-                         └──────────┬───────────┘
-                                    │
-                                    ▼
-                         ┌──────────────────────┐
-                         │     QA Loop          │
-                         │                      │
-                         │ Retrieve relevant    │
-                         │ chunks → rerank →    │
-                         │ generate grounded    │
-                         │ answer               │
-                         └──────────────────────┘
+### Research Workflow
+
+```mermaid
+flowchart TD
+    A[User Research Query] --> B[Query Processing]
+    B --> C[arXiv Search]
+    C --> D[Paper Selection]
+    D --> E[Paper Registry]
+    E --> F[Session & Paper Collection]
+    F --> G[PDF Download & Parsing]
+    G --> H[Chunking & Embedding]
+    H --> I[FAISS Index]
+    I --> J[Executive Briefing]
+    J --> K[Interactive QA]
+    K --> L[Semantic Retrieval]
+    L --> M[Cross-Encoder Reranking]
+    M --> N[Evidence Context]
+    N --> O[Grounded Answer]
 ```
 
-## LangGraph State
+### Persistence Architecture
 
-The graph passes a shared state between nodes.
+```mermaid
+flowchart LR
+    A[LangGraph Workflow] --> B[Application Layer]
+    B --> C[PostgreSQL]
+    B --> D[Supabase Storage]
+    B --> E[FAISS Indexes]
 
-Conceptually, the state contains:
+    C --> F[Paper Registry]
+    C --> G[Sessions & Collections]
+    C --> H[Vector Index Metadata]
 
-```python
-{
-    "query": ...,
-    "processed_query": ...,
-    "papers": ...,
-    "selected_paper": ...,
-    "pdf_path": ...,
-    "chunks": ...,
-    "results": ...,
-    "answer": ...
-}
-```
-
-### Main state fields
-
-| Field             | Purpose                                       |
-| ----------------- | --------------------------------------------- |
-| `query`           | Original user input                           |
-| `processed_query` | Normalized/rewritten query used for retrieval |
-| `papers`          | Papers returned by arXiv search               |
-| `selected_paper`  | Paper selected for processing                 |
-| `pdf_path`        | Local path to the downloaded PDF              |
-| `chunks`          | Processed document chunks                     |
-| `results`         | Retrieved/reranked evidence for a query       |
-| `answer`          | Generated briefing or QA response             |
-
-The graph separates **research acquisition** from **question answering**: once the paper has been processed and indexed, follow-up questions can use the existing searchable representation rather than downloading and processing the paper again.
-
----
-
-# End-to-End Flow
-
-For a new research request:
-
-```text
-User Query
-    ↓
-Query Understanding
-    ↓
-arXiv Search
-    ↓
-Paper Selection
-    ↓
-PDF Download
-    ↓
-PDF Parsing
-    ↓
-Chunking
-    ↓
-Embedding
-    ↓
-FAISS Index
-    ↓
-Executive Briefing
-    ↓
-Interactive QA
-```
-
-For each follow-up question:
-
-```text
-Question
-    ↓
-Semantic Retrieval
-    ↓
-Reranking
-    ↓
-Relevant Paper Context
-    ↓
-LLM
-    ↓
-Grounded Answer
+    D --> I[PDF Artifacts]
+    E --> J[Embeddings & Indexes]
 ```
 
 ---
 
-# Tech Stack
+## Retrieval Evaluation
 
-| Component           | Technology            |
-| ------------------- | --------------------- |
-| Language            | Python 3.12           |
-| Agent orchestration | LangGraph             |
-| Paper source        | arXiv API             |
-| PDF parsing         | PyMuPDF               |
-| Embeddings          | Sentence Transformers |
-| Vector search       | FAISS                 |
-| LLM                 | Ollama (`qwen2.5:3b`) |
-| Data validation     | Pydantic              |
-| Configuration       | python-dotenv         |
-| Testing             | pytest                |
+Retrieval performance is evaluated across four datasets containing **200 questions**. Baseline retrieval is compared against retrieval with a Cross-Encoder reranker.
 
-The system is designed to run locally without requiring a paid vector database or hosted retrieval service.
+### Mean Reciprocal Rank (MRR)
 
----
+| Dataset | Questions | Baseline MRR | Reranked MRR | Improvement |
+|---|---:|---:|---:|---:|
+| Single-paper | 80 | 68.85% | 79.57% | +10.73 pp |
+| Multi-paper | 50 | 71.30% | 87.14% | +15.83 pp |
+| Numerical evidence-specific | 40 | 42.07% | 44.46% | +2.39 pp |
+| Architecture & methodology | 30 | 39.81% | 48.26% | +8.44 pp |
 
-# Setup
+*Metrics are macro-averaged across questions. Improvements are expressed in percentage points.*
 
-## 1. Clone the repository
+### Key Results
 
-```bash
-git clone https://github.com/5ammy29/arxiv-agent.git
-cd arxiv-agent
-```
+- Improved multi-paper retrieval MRR by **15.83 percentage points**, from 71.30% to 87.14%.
+- Improved single-paper retrieval MRR by **10.73 percentage points**, from 68.85% to 79.57%.
+- Achieved MRR improvements across all four evaluation datasets.
+- Evaluated retrieval across single-paper, multi-paper, numerical evidence, and architecture/methodology questions.
 
-## 2. Create a Python environment
+Reranking does not improve every metric at every cutoff. Multi-paper Recall@5 and Recall@10 decrease in the reranked setting.
 
-Python **3.12** is recommended.
+*This benchmark evaluates retrieval quality. Answer-generation quality is not included.*
 
-Using Conda:
-
-```bash
-conda create -n arxiv-agent python=3.12
-conda activate arxiv-agent
-```
-
-## 3. Install dependencies
-
-```bash
-pip install -r requirements.txt
-```
-
-The project uses:
-
-* `langgraph`
-* `arxiv`
-* `pymupdf`
-* `sentence-transformers`
-* `faiss-cpu`
-* `pydantic`
-* `python-dotenv`
+For additional retrieval evaluation metrics and detailed benchmark results, see [`data/eval/report.md`](https://github.com/5ammy29/arxiv-agent/blob/v2/data/eval/report.md) on the `v2` branch.
 
 ---
 
-## LLM Setup
+## Tech Stack
 
-The agent uses [Ollama](https://ollama.com/) to run the LLM locally.
-
-Install Ollama:
-
-```powershell
-irm https://ollama.com/install.ps1 | iex
-````
-
-The default model is:
-
-```text
-qwen2.5:3b
-```
-
-To download the model, run:
-
-```bash
-ollama pull qwen2.5:3b
-```
+| Component | Technology |
+|---|---|
+| Language | Python 3.12 |
+| API Framework | FastAPI |
+| Agent Orchestration | LangGraph |
+| LLM | Ollama / Qwen2.5:3B |
+| Embeddings | Sentence Transformers |
+| Vector Search | FAISS |
+| Reranking | Cross-Encoder |
+| Database | PostgreSQL |
+| Object Storage | Supabase Storage |
+| PDF Processing | PyMuPDF |
+| Data Validation | Pydantic |
+| Testing | pytest |
+| Containerization | Docker |
 
 ---
 
-# Running the Agent
-
-Run the CLI from the repository root.
-
-```bash
-python -m cli
-```
-
-The CLI accepts three types of input:
-
-### arXiv ID
-
-```text
-Enter an arXiv ID, URL, or topic: 1706.03762
-```
-
-### arXiv URL
-
-```text
-Enter an arXiv ID, URL, or topic: https://arxiv.org/abs/1706.03762
-```
-
-### Natural-language topic
-
-```text
-Enter an arXiv ID, URL, or topic: transformer architecture
-```
-
-The agent then retrieves a relevant paper, processes it, generates a briefing, and allows follow-up questions.
-
----
-
-# Testing
-
-Run the complete test suite with:
-
-```bash
-PYTHONPATH=. pytest
-```
-
-The test suite covers the core components of the application, including:
-
-* query processing
-* arXiv retrieval
-* document processing
-* chunking
-* embeddings
-* retrieval
-* reranking
-* graph behavior
-* error handling
-* CLI-related behavior
-
-The final implementation was tested end-to-end using arXiv IDs, URLs, and broad natural-language research topics.
-
----
-
-# Example Run
-
-### Input
-
-```text
-Enter an arXiv ID, URL, or topic: transformer architecture
-```
-
-The agent searches arXiv, selects a relevant Transformer paper, downloads and processes the PDF, builds the local retrieval index, and generates an executive briefing.
-
-### Example briefing
-
-```text
-EXECUTIVE BRIEFING
-
-Paper: Attention Is All You Need
-
-Overview
-The paper describes the Transformer, an architecture which uses only
-the attention mechanism and does not rely on either recurrence or convolution.
-
-Main Contribution
-The authors suggest to use self-attention and multi-head attention as a
-replacement of recurrent sequence modeling that allows processing of tokens in
-parallel and modeling relationships between positions.
-
-Architecture
-The architecture suggested by the authors consists of two stacks - encoder and decoder.
-Each layer of the architecture utilizes multi-head self-attention, position-wise
-feed-forward networks, residual connections, and layer normalization.
-
-Key Result
-The Transformer architecture reaches very high translation accuracy while improving
-the training parallelization substantially as compared to the recurrent architecture.
-
-Significance
-The architecture offers a scalable alternative to recurrent sequence modeling and was the
-basis for subsequent language-model architectures.
-```
-
-The exact briefing depends on the paper retrieved and the generated model response.
-
----
-
-# Example QA
-
-After the briefing, the agent can answer follow-up questions using retrieved evidence from the processed paper.
-
-### Q1
-
-```text
-Question: What is the key contribution of the paper?
-```
-
-```text
-Answer:
-The key contribution is the Transformer model, which uses
-attention-based sequence modeling instead of recurrence and
-convolution. It enables highly efficient parallel training while
-maintaining the capability to capture token dependencies.
-```
-
-### Q2
-
-```text
-Question: Why does the architecture use multi-head attention?
-```
-
-```text
-Answer:
-Multi-head attention allows the model to attend to information from
-different representation subspaces and positions simultaneously.
-Different attention heads can therefore learn different relationships
-within the sequence.
-```
-
-### Q3
-
-```text
-Question: How does the paper address the lack of recurrence?
-```
-
-```text
-Answer:
-The Transformer introduces positional encodings so that information
-about token order is available to the model. Self-attention can then
-operate over the sequence without requiring recurrent computation.
-```
-
-> The examples above illustrate the interaction format. Actual answers are generated from the retrieved paper context at runtime.
-
----
-
-# Design Decisions & Tradeoffs
-
-## Why LangGraph?
-
-LangGraph is used since the application is intrinsically modeled as a stateful workflow as opposed to a workflow of one LLM call. Retrieval, document processing, indexing, brief writing, and QA are different steps with data flowing between them.
-
-An ability to maintain state in the graph also helps understand the workflow better and serves as a good basis to add other branches to the agent or implement its recovery.
-
-However, the cost is additional complexity of the architecture as opposed to writing all the logic inside a single Python function. In the case of a very small application, using LangGraph may become an overhead. In the current project, it does not.
-
-## Why local FAISS?
-
-FAISS was used as the vector store because it is lightweight, open source, and runs locally. This avoids introducing a hosted vector database or external infrastructure requirement.
-
-The downside is that the current version is built to handle one paper at a time, or one local use case. It is not designed for a persistent, multi-user retrieval engine setup.
-
-## Why semantic retrieval + reranking?
-
-Using embedding for retrieval ensures an effective method of locating semantically relevant parts of the paper regardless of differences in how the question is phrased compared to the text in the document.
-
-Subsequent reranking is performed to enhance the order of selected evidence before being presented to the LLM.
-
-The downside of such an approach is increased computational costs. An alternative approach would be to base everything on vector similarity alone.
-
-## Why process one selected paper?
-
-The current agent focuses on producing a high-quality briefing and QA experience around a selected paper rather than attempting to synthesize an entire literature search.
-
-This keeps the retrieval and grounding problem manageable and makes the resulting answers easier to associate with a specific source.
-
-With more time, the system could be extended to process multiple papers and provide cross-paper comparison, citation-aware synthesis, and disagreement detection.
-
-## What I would improve with more time
-
-Several areas could be improved:
-
-1. **Better paper selection**
-
-   * Using better ranking criteria rather than the first few papers from the arXiv search results.
-
-2. **Multi-paper research**
-
-   * Retrieving and processing more papers for answering questions on the level of literature.
-
-3. **Persistent indexing**
-
-   * Caching processed papers and their embeddings to avoid reprocessing when asking the same question.
-
-4. **Better document structure**
-
-   * Preserving section headings, tables, equations, and page information during PDF extraction..
-
-5. **Evaluation**
-
-   * Adding a benchmark of retrieval and answers' quality with questions and answers being manually verified.
-
-6. **More robust retrieval**
-
-   * Researching hybrid retrieval based on both lexical and semantic criteria and better reranking.
-
----
-
-# Known Limitations
-
-* Paper retrieval relies on the quality of the search results on arXiv.
-* Selecting just one paper may not be enough to answer general literature-review questions.
-* The quality of PDF extraction is dependent on the structure of the input PDF.
-* Tables, formulas, figures, and other complex structures may not be accurately reflected in text extraction.
-* The current approach relies on a local FAISS index and is not a production-ready multi-user vector database.
-* LLM-generated briefings and answers can still contain errors.
-* Grounding helps to avoid ungrounded responses but does not guarantee that the responses are correct.
-* Processing and embedding a paper locally introduces additional latency before the first briefing/QA interaction.
-* The system currently focuses on one selected paper rather than performing multi-paper synthesis.
-
----
-
-# Project Structure
+## Project Structure
 
 ```text
 arxiv-agent/
-│
 ├── project/
+│   ├── application/
+│   │   ├── papers/
+│   │   └── retrieval/
 │   ├── graph/
 │   │   ├── __init__.py
+│   │   ├── nodes.py
 │   │   ├── state.py
-│   │   └── nodes.py
-│   │
-│   ├── nodes/
-│   │   ├── arxiv.py
-│   │   └── llm.py
-│   │
-│   ├── retrieval/
-│   │   └── ...
-│   │
-│   └── cli.py
-│
+│   │   └── workflow.py
+│   ├── infrastructure/
+│   │   ├── database/
+│   │   └── storage/
+│   ├── processing/
+│   │   ├── pdf.py
+│   │   └── chunker.py
+│   └── api/
+├── frontend/
+├── benchmarks/
+├── deploy/
 ├── tests/
-│   └── ...
-│
-├── data/
-│   ├── papers/
-│   └── indexes/
-│
-├── .gitignore
-├── requirements.txt
+├── supabase/
+│   └── migrations/
 └── README.md
 ```
 
-Local papers, indexes, and other generated artifacts are kept out of version control.
+*The structure reflects the V2 architectural organization.*
 
 ---
 
-# Future Work
+## Engineering Focus
 
-Potential extensions include:
+V2 emphasizes:
 
-* Multi-paper retrieval and synthesis
-* Citation-aware answers
-* Persistent paper/index caching
-* Hybrid BM25 + vector retrieval
-* Improved reranking
-* Section-aware chunking
-* Figure/table extraction
-* Retrieval evaluation benchmarks
-* Streaming responses
-* Web interface
-* Conversation persistence
-* More sophisticated query planning
+- **Persistent Artifact Management:** Storing and reusing processed paper artifacts.
+- **Session Isolation:** Maintaining research context and paper collections across sessions.
+- **Reproducibility:** Tracking papers using canonical arXiv identifiers and versions.
+- **Retrieval Quality:** Evaluating semantic retrieval and reranking across diverse question categories.
+- **Modularity:** Separating graph orchestration from application logic and infrastructure.
+- **Storage Integration:** Using PostgreSQL and Supabase Storage for persistent research data.
+
+---
+
+## Development
+
+V2 development is maintained on the [`v2` branch](https://github.com/5ammy29/arxiv-agent/tree/v2).
+
+The `main` branch contains the project documentation, while the V2 implementation is maintained separately.
