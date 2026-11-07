@@ -97,7 +97,7 @@ Reranking does not improve every metric at every cutoff. Multi-paper Recall@5 an
 
 *This benchmark evaluates retrieval quality. Answer-generation quality is not included.*
 
-For additional retrieval evaluation metrics and detailed benchmark results, see [`data/eval/report.md`](https://github.com/5ammy29/arxiv-agent/blob/v2/data/eval/report.md) on the `v2` branch.
+For additional retrieval evaluation metrics and detailed benchmark results, see [`data/eval/report.md`](https://github.com/5ammy29/arxiv-agent/blob/v2/data/eval/qwen/report.md) on the `v2` branch.
 
 ---
 
