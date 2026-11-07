@@ -1,0 +1,32 @@
+{
+  "mode": "reranked",
+  "dataset_path": "/Users/sasha/Documents/arxiv-agent/data/eval/qwen/architecture_methodology/datasets/architecture_methodology_retrieval_eval_dataset.json",
+  "retrieval_predictions_path": "/Users/sasha/Documents/arxiv-agent/data/eval/qwen/architecture_methodology/predictions/reranked/retrieved_chunks.json",
+  "questions_evaluated": 30,
+  "questions_missing_retrieval_predictions": [],
+  "metrics_macro_average": {
+    "MRR": 0.4825793650793651,
+    "Precision@1": 0.36666666666666664,
+    "Recall@1": 0.23333333333333334,
+    "nDCG@1": 0.36666666666666664,
+    "Precision@2": 0.23333333333333334,
+    "Recall@2": 0.2833333333333333,
+    "nDCG@2": 0.30219119879424305,
+    "Precision@3": 0.2,
+    "Recall@3": 0.34444444444444444,
+    "nDCG@3": 0.34066987053289527,
+    "Precision@5": 0.16666666666666666,
+    "Recall@5": 0.45555555555555555,
+    "nDCG@5": 0.3977435274784389,
+    "Precision@10": 0.11666666666666667,
+    "Recall@10": 0.6222222222222222,
+    "nDCG@10": 0.46487580243709375
+  },
+  "ks": [
+    1,
+    2,
+    3,
+    5,
+    10
+  ]
+}

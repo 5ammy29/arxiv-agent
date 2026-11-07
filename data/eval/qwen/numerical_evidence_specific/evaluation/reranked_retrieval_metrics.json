@@ -1,0 +1,24 @@
+{
+  "mode": "reranked",
+  "dataset_path": "/Users/sasha/Documents/arxiv-agent/data/eval/qwen/numerical_evidence_specific/datasets/numerical_evidence_specific_retrieval_eval_dataset.json",
+  "retrieved_chunks_path": "/Users/sasha/Documents/arxiv-agent/data/eval/qwen/numerical_evidence_specific/predictions/reranked/retrieved_chunks.json",
+  "question_count": 40,
+  "questions_missing_retrieval_results": [],
+  "metrics_macro_average": {
+    "MRR": 0.44458333333333333,
+    "Precision@1": 0.325,
+    "Recall@1": 0.325,
+    "nDCG@1": 0.325,
+    "Precision@3": 0.19166666666666665,
+    "Recall@3": 0.575,
+    "nDCG@3": 0.46963946303571863,
+    "Precision@5": 0.125,
+    "Recall@5": 0.625,
+    "nDCG@5": 0.490077697168417,
+    "Precision@10": 0.0625,
+    "Recall@10": 0.625,
+    "nDCG@10": 0.490077697168417
+  },
+  "evaluation_note": "Metrics are macro-averaged over questions. Precision/Recall/MRR use binary relevance (any expected chunk with grade > 0). nDCG uses graded relevance_candidate values from expected_chunk_ids; missing grades default to 1.",
+  "per_question_csv": "/Users/sasha/Documents/arxiv-agent/data/eval/qwen/numerical_evidence_specific/evaluation/reranked_retrieval_metrics_per_question.csv"
+}

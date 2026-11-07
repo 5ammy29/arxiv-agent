@@ -1,0 +1,29 @@
+{
+  "mode": "reranked",
+  "retrieval_metrics": {
+    "MRR": 0.8713888888888889,
+    "Precision@1": 0.84,
+    "Recall@1": 0.42,
+    "nDCG@1": 0.84,
+    "Precision@2": 0.42,
+    "Recall@2": 0.42,
+    "nDCG@2": 0.515043641922985,
+    "Precision@3": 0.32,
+    "Recall@3": 0.48,
+    "nDCG@3": 0.5518324734889125,
+    "Precision@5": 0.2,
+    "Recall@5": 0.5,
+    "nDCG@5": 0.5613203819996844,
+    "Precision@10": 0.136,
+    "Recall@10": 0.68,
+    "nDCG@10": 0.6308026158643889
+  },
+  "answer_judge_metrics": {
+    "correctness": 0.0,
+    "faithfulness": 0.0,
+    "relevance": 0.0,
+    "overall": 0.0
+  },
+  "retrieval_question_count": 50,
+  "answer_question_count": 0
+}

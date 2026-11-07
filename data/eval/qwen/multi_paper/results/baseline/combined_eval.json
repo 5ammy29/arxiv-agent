@@ -1,0 +1,29 @@
+{
+  "mode": "baseline",
+  "retrieval_metrics": {
+    "MRR": 0.713047619047619,
+    "Precision@1": 0.58,
+    "Recall@1": 0.29,
+    "nDCG@1": 0.58,
+    "Precision@2": 0.47,
+    "Recall@2": 0.47,
+    "nDCG@2": 0.49489238240840083,
+    "Precision@3": 0.33999999999999997,
+    "Recall@3": 0.51,
+    "nDCG@3": 0.5194182701190192,
+    "Precision@5": 0.28800000000000003,
+    "Recall@5": 0.72,
+    "nDCG@5": 0.6265650242270461,
+    "Precision@10": 0.17200000000000001,
+    "Recall@10": 0.86,
+    "nDCG@10": 0.6826411080188844
+  },
+  "answer_judge_metrics": {
+    "correctness": 0.0,
+    "faithfulness": 0.0,
+    "relevance": 0.0,
+    "overall": 0.0
+  },
+  "retrieval_question_count": 50,
+  "answer_question_count": 0
+}

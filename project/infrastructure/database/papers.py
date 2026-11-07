@@ -12,6 +12,8 @@ from project.infrastructure.database.paper_locks import (
 
 version_pattern = re.compile(r"^(?P<base>.+?)v(?P<version>\d+)$")
 
+def _sanitize_text(text: str) -> str:
+    return text.replace("\x00", "")
 
 def _assert_lease_paper(lease: PaperProcessingLease, paper_id: UUID) -> None:
     if lease.paper_id != paper_id:
@@ -317,7 +319,7 @@ def save_paper_content(
                 INSERT INTO paper_pages (paper_id, page_number, text)
                 VALUES (%s, %s, %s)
                 """,
-                (paper_id, page["page_number"], page["text"]),
+                (paper_id, page["page_number"], _sanitize_text(page["text"])),
             )
 
         for chunk in chunks:
@@ -332,7 +334,7 @@ def save_paper_content(
                     paper_id,
                     chunk["chunk_id"],
                     chunk["page_number"],
-                    chunk["text"],
+                    _sanitize_text(chunk["text"]),
                 ),
             )
 

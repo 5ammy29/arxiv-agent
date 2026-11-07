@@ -1,0 +1,1008 @@
+{
+  "methodology-Q01": {
+    "question": "How does the Transformer paper compute scaled dot-product attention, and why is the scaling factor used?",
+    "papers": [
+      {
+        "arxiv_id": "1706.03762",
+        "title": "Attention Is All You Need"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "1706.03762",
+        "chunk_id": 9
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "1706.03762",
+        "title": "Attention Is All You Need",
+        "chunk_id": 9,
+        "page_number": 4,
+        "chunk_text": "Scaled Dot-Product Attention Multi-Head Attention Figure 2: (left) Scaled Dot-Product Attention. (right) Multi-Head Attention consists of several attention layers running in parallel. of the values, where the weight assigned to each value is computed by a compatibility function of the query with the corresponding key. 3.2.1 Scaled Dot-Product Attention We call our particular attention \"Scaled Dot-Product Attention\" (Figure 2). The input consists of queries and keys of dimension dk, and values of dimension dv. We compute the dot products of the query with all keys, divide each by √dk, and apply a softmax function to obtain the weights on the values. In practice, we compute the attention function on a set of queries simultaneously, packed together into a matrix Q. The keys and values are also packed together into matrices K and V . We compute the matrix of outputs as: Attention(Q, K, V ) = softmax(QKT √dk )V (1) The two most commonly used attention functions are additive attention [2], and dot-product (multi- plicative) attention. Dot-product attention is identical to our algorithm, except for the scaling factor of 1 √dk . Additive attention computes the compatibility function using a feed-forward network with a single hidden layer. While the two are similar in theoretical complexity, dot-product attention is much faster and more space-efficient in practice, since it can be implemented using highly optimized matrix multiplication code. While for small values of dk the two"
+      }
+    ]
+  },
+  "methodology-Q02": {
+    "question": "How does the Transformer paper train and evaluate its models on the WMT translation tasks?",
+    "papers": [
+      {
+        "arxiv_id": "1706.03762",
+        "title": "Attention Is All You Need"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "1706.03762",
+        "chunk_id": 18
+      },
+      {
+        "arxiv_id": "1706.03762",
+        "chunk_id": 20
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "1706.03762",
+        "title": "Attention Is All You Need",
+        "chunk_id": 18,
+        "page_number": 7,
+        "chunk_text": "ke in our model. As side benefit, self-attention could yield more interpretable models. We inspect attention distributions from our models and present and discuss examples in the appendix. Not only do individual attention heads clearly learn to perform different tasks, many appear to exhibit behavior related to the syntactic and semantic structure of the sentences. 5 Training This section describes the training regime for our models. 5.1 Training Data and Batching We trained on the standard WMT 2014 English-German dataset consisting of about 4.5 million sentence pairs. Sentences were encoded using byte-pair encoding [3], which has a shared source- target vocabulary of about 37000 tokens. For English-French, we used the significantly larger WMT 2014 English-French dataset consisting of 36M sentences and split tokens into a 32000 word-piece vocabulary [38]. Sentence pairs were batched together by approximate sequence length. Each training batch contained a set of sentence pairs containing approximately 25000 source tokens and 25000 target tokens. 5.2 Hardware and Schedule We trained our models on one machine with 8 NVIDIA P100 GPUs. For our base models using the hyperparameters described throughout the paper, each training step took about 0.4 seconds. We trained the base models for a total of 100,000 steps or 12 hours. For our big models,(described on the bottom line of table 3), step time was 1.0 seconds. The big models were trained for 300,000 steps (3.5 days). 5.3 Optimizer"
+      },
+      {
+        "arxiv_id": "1706.03762",
+        "title": "Attention Is All You Need",
+        "chunk_id": 20,
+        "page_number": 8,
+        "chunk_text": "Table 2: The Transformer achieves better BLEU scores than previous state-of-the-art models on the English-to-German and English-to-French newstest2014 tests at a fraction of the training cost. Model BLEU Training Cost (FLOPs) EN-DE EN-FR EN-DE EN-FR ByteNet [18] 23.75 Deep-Att + PosUnk [39] 39.2 1.0 · 1020 GNMT + RL [38] 24.6 39.92 2.3 · 1019 1.4 · 1020 ConvS2S [9] 25.16 40.46 9.6 · 1018 1.5 · 1020 MoE [32] 26.03 40.56 2.0 · 1019 1.2 · 1020 Deep-Att + PosUnk Ensemble [39] 40.4 8.0 · 1020 GNMT + RL Ensemble [38] 26.30 41.16 1.8 · 1020 1.1 · 1021 ConvS2S Ensemble [9] 26.36 41.29 7.7 · 1019 1.2 · 1021 Transformer (base model) 27.3 38.1 3.3 · 1018 Transformer (big) 28.4 41.8 2.3 · 1019 Residual Dropout We apply dropout [33] to the output of each sub-layer, before it is added to the sub-layer input and normalized. In addition, we apply dropout to the sums of the embeddings and the positional encodings in both the encoder and decoder stacks. For the base model, we use a rate of Pdrop = 0.1. Label Smoothing During training, we employed label smoothing of value ϵls = 0.1 [36]. This hurts perplexity, as the model learns to be more unsure, but improves accuracy and BLEU score. 6 Results 6.1 Machine Translation On the WMT 2014 English-to-German translation task, the big transformer model (Transformer (big) in Table 2) outperforms the best previously reported models (including ensembles) by more than 2.0 BLEU, establishing a new state-of-the-art BLEU score of 28.4. The configuration of"
+      }
+    ]
+  },
+  "methodology-Q03": {
+    "question": "What pre-training and fine-tuning methodology does BERT use, and what are its two pre-training objectives?",
+    "papers": [
+      {
+        "arxiv_id": "1810.04805",
+        "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "1810.04805",
+        "chunk_id": 4
+      },
+      {
+        "arxiv_id": "1810.04805",
+        "chunk_id": 5
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "1810.04805",
+        "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+        "chunk_id": 4,
+        "page_number": 2,
+        "chunk_text": "//github.com/ google-research/bert. 2 Related Work There is a long history of pre-training general lan- guage representations, and we brieﬂy review the most widely-used approaches in this section. 2.1 Unsupervised Feature-based Approaches Learning widely applicable representations of words has been an active area of research for decades, including non-neural (Brown et al., 1992; Ando and Zhang, 2005; Blitzer et al., 2006) and neural (Mikolov et al., 2013; Pennington et al., 2014) methods. Pre-trained word embeddings are an integral part of modern NLP systems, of- fering signiﬁcant improvements over embeddings learned from scratch (Turian et al., 2010). To pre- train word embedding vectors, left-to-right lan- guage modeling objectives have been used (Mnih and Hinton, 2009), as well as objectives to dis- criminate correct from incorrect words in left and right context (Mikolov et al., 2013). These approaches have been generalized to coarser granularities, such as sentence embed- dings (Kiros et al., 2015; Logeswaran and Lee, 2018) or paragraph embeddings (Le and Mikolov, 2014). To train sentence representations, prior work has used objectives to rank candidate next sentences (Jernite et al., 2017; Logeswaran and Lee, 2018), left-to-right generation of next sen- tence words given a representation of the previous sentence (Kiros et al., 2015), or denoising auto- encoder derived objectives (Hill et al., 2016). ELMo and its predecessor (Peters et al., 2017, 2018a) generalize"
+      },
+      {
+        "arxiv_id": "1810.04805",
+        "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+        "chunk_id": 5,
+        "page_number": 2,
+        "chunk_text": "iven a representation of the previous sentence (Kiros et al., 2015), or denoising auto- encoder derived objectives (Hill et al., 2016). ELMo and its predecessor (Peters et al., 2017, 2018a) generalize traditional word embedding re- search along a different dimension. They extract context-sensitive features from a left-to-right and a right-to-left language model. The contextual rep- resentation of each token is the concatenation of the left-to-right and right-to-left representations. When integrating contextual word embeddings with existing task-speciﬁc architectures, ELMo advances the state of the art for several major NLP benchmarks (Peters et al., 2018a) including ques- tion answering (Rajpurkar et al., 2016), sentiment analysis (Socher et al., 2013), and named entity recognition (Tjong Kim Sang and De Meulder, 2003). Melamud et al. (2016) proposed learning contextual representations through a task to pre- dict a single word from both left and right context using LSTMs. Similar to ELMo, their model is feature-based and not deeply bidirectional. Fedus et al. (2018) shows that the cloze task can be used to improve the robustness of text generation mod- els. 2.2 Unsupervised Fine-tuning Approaches As with the feature-based approaches, the ﬁrst works in this direction only pre-trained word em- bedding parameters from unlabeled text (Col- lobert and Weston, 2008). More recently, sentence or document encoders which produce contextual token representations have been pre-trained"
+      }
+    ]
+  },
+  "methodology-Q04": {
+    "question": "How does the original neural machine translation model jointly learn alignment and translation without a fixed alignment?",
+    "papers": [
+      {
+        "arxiv_id": "1409.0473",
+        "title": "Neural Machine Translation by Jointly Learning to Align and Translate"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "1409.0473",
+        "chunk_id": 3
+      },
+      {
+        "arxiv_id": "1409.0473",
+        "chunk_id": 4
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "1409.0473",
+        "title": "Neural Machine Translation by Jointly Learning to Align and Translate",
+        "chunk_id": 3,
+        "page_number": 2,
+        "chunk_text": "Published as a conference paper at ICLR 2015 The most important distinguishing feature of this approach from the basic encoder–decoder is that it does not attempt to encode a whole input sentence into a single ﬁxed-length vector. Instead, it en- codes the input sentence into a sequence of vectors and chooses a subset of these vectors adaptively while decoding the translation. This frees a neural translation model from having to squash all the information of a source sentence, regardless of its length, into a ﬁxed-length vector. We show this allows a model to cope better with long sentences. In this paper, we show that the proposed approach of jointly learning to align and translate achieves signiﬁcantly improved translation performance over the basic encoder–decoder approach. The im- provement is more apparent with longer sentences, but can be observed with sentences of any length. On the task of English-to-French translation, the proposed approach achieves, with a single model, a translation performance comparable, or close, to the conventional phrase-based system. Furthermore, qualitative analysis reveals that the proposed model ﬁnds a linguistically plausible (soft-)alignment between a source sentence and the corresponding target sentence. 2 BACKGROUND: NEURAL MACHINE TRANSLATION From a probabilistic perspective, translation is equivalent to ﬁnding a target sentence y that max- imizes the conditional probability of y given a source sentence x, i.e., arg maxy p(y | x). In"
+      },
+      {
+        "arxiv_id": "1409.0473",
+        "title": "Neural Machine Translation by Jointly Learning to Align and Translate",
+        "chunk_id": 4,
+        "page_number": 2,
+        "chunk_text": "ATION From a probabilistic perspective, translation is equivalent to ﬁnding a target sentence y that max- imizes the conditional probability of y given a source sentence x, i.e., arg maxy p(y | x). In neural machine translation, we ﬁt a parameterized model to maximize the conditional probability of sentence pairs using a parallel training corpus. Once the conditional distribution is learned by a translation model, given a source sentence a corresponding translation can be generated by searching for the sentence that maximizes the conditional probability. Recently, a number of papers have proposed the use of neural networks to directly learn this condi- tional distribution (see, e.g., Kalchbrenner and Blunsom, 2013; Cho et al., 2014a; Sutskever et al., 2014; Cho et al., 2014b; Forcada and ˜Neco, 1997). This neural machine translation approach typ- ically consists of two components, the ﬁrst of which encodes a source sentence x and the second decodes to a target sentence y. For instance, two recurrent neural networks (RNN) were used by (Cho et al., 2014a) and (Sutskever et al., 2014) to encode a variable-length source sentence into a ﬁxed-length vector and to decode the vector into a variable-length target sentence. Despite being a quite new approach, neural machine translation has already shown promising results. Sutskever et al. (2014) reported that the neural machine translation based on RNNs with long short- term memory (LSTM) units achieves close to the state-of-the-art"
+      }
+    ]
+  },
+  "methodology-Q05": {
+    "question": "What residual-learning formulation does ResNet introduce to make very deep networks easier to optimize?",
+    "papers": [
+      {
+        "arxiv_id": "1512.03385",
+        "title": "Deep Residual Learning for Image Recognition"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "1512.03385",
+        "chunk_id": 10
+      },
+      {
+        "arxiv_id": "1512.03385",
+        "chunk_id": 12
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "1512.03385",
+        "title": "Deep Residual Learning for Image Recognition",
+        "chunk_id": 10,
+        "page_number": 3,
+        "chunk_text": "s might have difﬁculties in approximating identity mappings by multiple nonlinear layers. With the residual learning re- formulation, if identity mappings are optimal, the solvers may simply drive the weights of the multiple nonlinear lay- ers toward zero to approach identity mappings. In real cases, it is unlikely that identity mappings are op- timal, but our reformulation may help to precondition the problem. If the optimal function is closer to an identity mapping than to a zero mapping, it should be easier for the solver to ﬁnd the perturbations with reference to an identity mapping, than to learn the function as a new one. We show by experiments (Fig. 7) that the learned residual functions in general have small responses, suggesting that identity map- pings provide reasonable preconditioning. 3.2. Identity Mapping by Shortcuts We adopt residual learning to every few stacked layers. A building block is shown in Fig. 2. Formally, in this paper we consider a building block deﬁned as: y = F(x, {Wi}) + x. (1) Here x and y are the input and output vectors of the lay- ers considered. The function F(x, {Wi}) represents the residual mapping to be learned. For the example in Fig. 2 that has two layers, F = W2σ(W1x) in which σ denotes 2This hypothesis, however, is still an open question. See [28]. ReLU [29] and the biases are omitted for simplifying no- tations. The operation F + x is performed by a shortcut connection and element-wise addition. We adopt the sec- ond nonlinearity"
+      },
+      {
+        "arxiv_id": "1512.03385",
+        "title": "Deep Residual Learning for Image Recognition",
+        "chunk_id": 12,
+        "page_number": 3,
+        "chunk_text": "F has only a single layer, Eqn.(1) is similar to a linear layer: y = W1x + x, for which we have not observed advantages. We also note that although the above notations are about fully-connected layers for simplicity, they are applicable to convolutional layers. The function F(x, {Wi}) can repre- sent multiple convolutional layers. The element-wise addi- tion is performed on two feature maps, channel by channel. 3.3. Network Architectures We have tested various plain/residual nets, and have ob- served consistent phenomena. To provide instances for dis- cussion, we describe two models for ImageNet as follows. Plain Network. Our plain baselines (Fig. 3, middle) are mainly inspired by the philosophy of VGG nets [41] (Fig. 3, left). The convolutional layers mostly have 3×3 ﬁlters and follow two simple design rules: (i) for the same output feature map size, the layers have the same number of ﬁl- ters; and (ii) if the feature map size is halved, the num- ber of ﬁlters is doubled so as to preserve the time com- plexity per layer. We perform downsampling directly by convolutional layers that have a stride of 2. The network ends with a global average pooling layer and a 1000-way fully-connected layer with softmax. The total number of weighted layers is 34 in Fig. 3 (middle). It is worth noticing that our model has fewer ﬁlters and lower complexity than VGG nets [41] (Fig. 3, left). Our 34- layer baseline has 3.6 billion FLOPs (multiply-adds), which is only 18% of VGG-19 (19.6 billion"
+      }
+    ]
+  },
+  "methodology-Q06": {
+    "question": "How does RAG combine parametric and non-parametric memory, and how are retrieved passages used during generation?",
+    "papers": [
+      {
+        "arxiv_id": "2005.11401",
+        "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "2005.11401",
+        "chunk_id": 1
+      },
+      {
+        "arxiv_id": "2005.11401",
+        "chunk_id": 7
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "2005.11401",
+        "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+        "chunk_id": 1,
+        "page_number": 1,
+        "chunk_text": "etric memory is a dense vector index of Wikipedia, accessed with a pre-trained neural retriever. We com- pare two RAG formulations, one which conditions on the same retrieved passages across the whole generated sequence, and another which can use different passages per token. We ﬁne-tune and evaluate our models on a wide range of knowledge- intensive NLP tasks and set the state of the art on three open domain QA tasks, outperforming parametric seq2seq models and task-speciﬁc retrieve-and-extract architectures. For language generation tasks, we ﬁnd that RAG models generate more speciﬁc, diverse and factual language than a state-of-the-art parametric-only seq2seq baseline. 1 Introduction Pre-trained neural language models have been shown to learn a substantial amount of in-depth knowl- edge from data [47]. They can do so without any access to an external memory, as a parameterized implicit knowledge base [51, 52]. While this development is exciting, such models do have down- sides: They cannot easily expand or revise their memory, can’t straightforwardly provide insight into their predictions, and may produce “hallucinations” [38]. Hybrid models that combine parametric memory with non-parametric (i.e., retrieval-based) memories [20, 26, 48] can address some of these issues because knowledge can be directly revised and expanded, and accessed knowledge can be inspected and interpreted. REALM [20] and ORQA [31], two recently introduced models that combine masked language models"
+      },
+      {
+        "arxiv_id": "2005.11401",
+        "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+        "chunk_id": 7,
+        "page_number": 3,
+        "chunk_text": "by θ that generates a current token based on a context of the previous i −1 tokens y1:i−1, the original input x and a retrieved passage z. To train the retriever and generator end-to-end, we treat the retrieved document as a latent variable. We propose two models that marginalize over the latent documents in different ways to produce a distribution over generated text. In one approach, RAG-Sequence, the model uses the same document to predict each target token. The second approach, RAG-Token, can predict each target token based on a different document. In the following, we formally introduce both models and then describe the pη and pθ components, as well as the training and decoding procedure. 2.1 Models RAG-Sequence Model The RAG-Sequence model uses the same retrieved document to generate the complete sequence. Technically, it treats the retrieved document as a single latent variable that is marginalized to get the seq2seq probability p(y|x) via a top-K approximation. Concretely, the top K documents are retrieved using the retriever, and the generator produces the output sequence probability for each document, which are then marginalized, pRAG-Sequence(y|x) ≈ X z∈top-k(p(·|x)) pη(z|x)pθ(y|x, z) = X z∈top-k(p(·|x)) pη(z|x) N Y i pθ(yi|x, z, y1:i−1) RAG-Token Model In the RAG-Token model we can draw a different latent document for each target token and marginalize accordingly. This allows the generator to choose content from several documents when producing an answer."
+      }
+    ]
+  },
+  "methodology-Q07": {
+    "question": "What empirical scaling relationships does the Neural Language Model Scaling Laws study report between model size, data, and loss?",
+    "papers": [
+      {
+        "arxiv_id": "2001.08361",
+        "title": "Scaling Laws for Neural Language Models"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "2001.08361",
+        "chunk_id": 5
+      },
+      {
+        "arxiv_id": "2001.08361",
+        "chunk_id": 12
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "2001.08361",
+        "title": "Scaling Laws for Neural Language Models",
+        "chunk_id": 5,
+        "page_number": 3,
+        "chunk_text": "n tandem, but enters a regime of diminishing returns if either N or D is held ﬁxed while the other increases. The performance penalty depends predictably on the ratio N 0.74/D, meaning that every time we increase the model size 8x, we only need to increase the data by roughly 5x to avoid a penalty. (Section 4) Universality of training: Training curves follow predictable power-laws whose parameters are roughly independent of the model size. By extrapolating the early part of a training curve, we can roughly predict the loss that would be achieved if we trained for much longer. (Section 5) Transfer improves with test performance: When we evaluate models on text with a different distribution than they were trained on, the results are strongly correlated to those on the training validation set with a roughly constant offset in the loss – in other words, transfer to a different distribution incurs a constant penalty but otherwise improves roughly in line with performance on the training set. (Section 3.2.2) Sample efﬁciency: Large models are more sample-efﬁcient than small models, reaching the same level of performance with fewer optimization steps (Figure 2) and using fewer data points (Figure 4). Convergence is inefﬁcient: When working within a ﬁxed compute budget C but without any other restric- tions on the model size N or available data D, we attain optimal performance by training very large models and stopping signiﬁcantly short of convergence (see Figure 3). Maximally"
+      },
+      {
+        "arxiv_id": "2001.08361",
+        "title": "Scaling Laws for Neural Language Models",
+        "chunk_id": 12,
+        "page_number": 6,
+        "chunk_text": "be maximally compute-efﬁcient because of hardware constraints. Optimal performance depends on total compute as a power law (see Equation (1.3)). We provide some basic theoretical motivation for Equation (1.5), an analysis of learning curve ﬁts and their implications for training time, and a breakdown of our results per token. We also make some brief compar- isons to LSTMs and recurrent Transformers [DGV+18]. 1.3 Notation We use the following notation: • L – the cross entropy loss in nats. Typically it will be averaged over the tokens in a context, but in some cases we report the loss for speciﬁc tokens within the context. • N – the number of model parameters, excluding all vocabulary and positional embeddings • C ≈6NBS – an estimate of the total non-embedding training compute, where B is the batch size, and S is the number of training steps (ie parameter updates). We quote numerical values in PF-days, where one PF-day = 1015 × 24 × 3600 = 8.64 × 1019 ﬂoating point operations. • D – the dataset size in tokens • Bcrit – the critical batch size [MKAT18], deﬁned and discussed in Section 5.1. Training at the critical batch size provides a roughly optimal compromise between time and compute efﬁciency. • Cmin – an estimate of the minimum amount of non-embedding compute to reach a given value of the loss. This is the training compute that would be used if the model were trained at a batch size much less than the critical batch size. • Smin – an estimate of the minimal number of"
+      }
+    ]
+  },
+  "methodology-Q08": {
+    "question": "How does Chinchilla determine the compute-optimal trade-off between model size and training tokens?",
+    "papers": [
+      {
+        "arxiv_id": "2203.15556",
+        "title": "Training Compute-Optimal Large Language Models"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "2203.15556",
+        "chunk_id": 11
+      },
+      {
+        "arxiv_id": "2203.15556",
+        "chunk_id": 16
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "2203.15556",
+        "title": "Training Compute-Optimal Large Language Models",
+        "chunk_id": 11,
+        "page_number": 4,
+        "chunk_text": "We present three diﬀerent approaches to answer the question driving our research: Given a ﬁxed FLOPs budget, how should one trade-oﬀmodel size and the number of training tokens? In all three cases we start by training a range of models varying both model size and the number of training tokens and use the resulting training curves to ﬁt an empirical estimator of how they should scale. We assume a power-law relationship between compute and model size as done in Clark et al. (2022); Kaplan et al. (2020), though future work may want to include potential curvature in this relationship for large model sizes. The resulting predictions are similar for all three methods and suggest that parameter count and number of training tokens should be increased equally with more compute3— with proportions reported in Table 2. This is in clear contrast to previous work on this topic and warrants further investigation. 3We compute FLOPs as described in Appendix F. 4"
+      },
+      {
+        "arxiv_id": "2203.15556",
+        "title": "Training Compute-Optimal Large Language Models",
+        "chunk_id": 16,
+        "page_number": 6,
+        "chunk_text": "hown in Figure 3 (center, right). Again, we ﬁt exponents of the form 𝑁𝑜𝑝𝑡∝𝐶𝑎and 𝐷𝑜𝑝𝑡∝𝐶𝑏and we ﬁnd that 𝑎= 0.49 and 𝑏= 0.51—as summarized in Table 2. 3.3. Approach 3: Fitting a parametric loss function Lastly, we model all ﬁnal losses from experiments in Approach 1 & 2 as a parametric function of model parameter count and the number of seen tokens. Following a classical risk decomposition (see Section D.2), we propose the following functional form ˆ𝐿(𝑁, 𝐷) ≜𝐸+ 𝐴 𝑁𝛼+ 𝐵 𝐷𝛽. (2) The ﬁrst term captures the loss for an ideal generative process on the data distribution, and should correspond to the entropy of natural text. The second term captures the fact that a perfectly trained transformer with 𝑁parameters underperforms the ideal generative process. The ﬁnal term captures the fact that the transformer is not trained to convergence, as we only make a ﬁnite number of optimisation steps, on a sample of the dataset distribution. Model ﬁtting. To estimate (𝐴, 𝐵, 𝐸, 𝛼, 𝛽), we minimize the Huber loss (Huber, 1964) between the predicted and observed log loss using the L-BFGS algorithm (Nocedal, 1980): min 𝐴,𝐵,𝐸,𝛼,𝛽 ∑︁ Runs 𝑖 Huber𝛿 \u0010 log ˆ𝐿(𝑁𝑖, 𝐷𝑖) −log 𝐿𝑖 \u0011 (3) We account for possible local minima by selecting the best ﬁt from a grid of initialisations. The Huber loss (𝛿= 10−3) is robust to outliers, which we ﬁnd important for good predictive performance over held-out data points. Section D.2 details the ﬁtting procedure and the loss decomposition. 6"
+      }
+    ]
+  },
+  "methodology-Q09": {
+    "question": "How does LoRA represent the weight update using low-rank matrices, and which model weights remain frozen?",
+    "papers": [
+      {
+        "arxiv_id": "2106.09685",
+        "title": "LoRA: Low-Rank Adaptation of Large Language Models"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "2106.09685",
+        "chunk_id": 4
+      },
+      {
+        "arxiv_id": "2106.09685",
+        "chunk_id": 6
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "2106.09685",
+        "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+        "chunk_id": 4,
+        "page_number": 2,
+        "chunk_text": "sks. We can freeze the shared model and efﬁciently switch tasks by replacing the matrices A and B in Figure 1, reducing the storage requirement and task-switching over- head signiﬁcantly. • LoRA makes training more efﬁcient and lowers the hardware barrier to entry by up to 3 times when using adaptive optimizers since we do not need to calculate the gradients or maintain the optimizer states for most parameters. Instead, we only optimize the injected, much smaller low-rank matrices. • Our simple linear design allows us to merge the trainable matrices with the frozen weights when deployed, introducing no inference latency compared to a fully ﬁne-tuned model, by construction. • LoRA is orthogonal to many prior methods and can be combined with many of them, such as preﬁx-tuning. We provide an example in Appendix E. Terminologies and Conventions We make frequent references to the Transformer architecture and use the conventional terminologies for its dimensions. We call the input and output di- mension size of a Transformer layer dmodel. We use Wq, Wk, Wv, and Wo to refer to the query/key/value/output projection matrices in the self-attention module. W or W0 refers to a pre- trained weight matrix and ∆W its accumulated gradient update during adaptation. We use r to denote the rank of a LoRA module. We follow the conventions set out by (Vaswani et al., 2017; Brown et al., 2020) and use Adam (Loshchilov & Hutter, 2019; Kingma & Ba, 2017) for model optimization and use a Transformer"
+      },
+      {
+        "arxiv_id": "2106.09685",
+        "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+        "chunk_id": 6,
+        "page_number": 3,
+        "chunk_text": "During full ﬁne-tuning, the model is initialized to pre-trained weights Φ0 and updated to Φ0 + ∆Φ by repeatedly following the gradient to maximize the conditional language modeling objective: max Φ X (x,y)∈Z |y| X t=1 log (PΦ(yt|x, y<t)) (1) One of the main drawbacks for full ﬁne-tuning is that for each downstream task, we learn a different set of parameters ∆Φ whose dimension |∆Φ| equals |Φ0|. Thus, if the pre-trained model is large (such as GPT-3 with |Φ0| ≈175 Billion), storing and deploying many independent instances of ﬁne-tuned models can be challenging, if at all feasible. In this paper, we adopt a more parameter-efﬁcient approach, where the task-speciﬁc parameter increment ∆Φ = ∆Φ(Θ) is further encoded by a much smaller-sized set of parameters Θ with |Θ| ≪|Φ0|. The task of ﬁnding ∆Φ thus becomes optimizing over Θ: max Θ X (x,y)∈Z |y| X t=1 log pΦ0+∆Φ(Θ)(yt|x, y<t) \u0001 (2) In the subsequent sections, we propose to use a low-rank representation to encode ∆Φ that is both compute- and memory-efﬁcient. When the pre-trained model is GPT-3 175B, the number of train- able parameters |Θ| can be as small as 0.01% of |Φ0|. 3 AREN’T EXISTING SOLUTIONS GOOD ENOUGH? The problem we set out to tackle is by no means new. Since the inception of transfer learning, dozens of works have sought to make model adaptation more parameter- and compute-efﬁcient. See Sec- tion 6 for a survey of some of the well-known works. Using language modeling as an example, there are two prominent strategies"
+      }
+    ]
+  },
+  "methodology-Q10": {
+    "question": "What quantization and memory-management techniques make QLoRA memory-efficient for fine-tuning?",
+    "papers": [
+      {
+        "arxiv_id": "2305.14314",
+        "title": "QLoRA: Efficient Finetuning of Quantized LLMs"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "2305.14314",
+        "chunk_id": 7
+      },
+      {
+        "arxiv_id": "2305.14314",
+        "chunk_id": 8
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "2305.14314",
+        "title": "QLoRA: Efficient Finetuning of Quantized LLMs",
+        "chunk_id": 7,
+        "page_number": 3,
+        "chunk_text": "Figure 1: Different finetuning methods and their memory requirements. QLORA improves over LoRA by quantizing the transformer model to 4-bit precision and using paged optimizers to handle memory spikes. 2 Background Block-wise k-bit Quantization Quantization is the process of discretizing an input from a rep- resentation that holds more information to a representation with less information. It often means taking a data type with more bits and converting it to fewer bits, for example from 32-bit floats to 8-bit Integers. To ensure that the entire range of the low-bit data type is used, the input data type is commonly rescaled into the target data type range through normalization by the absolute maximum of the input elements, which are usually structured as a tensor. For example, quantizing a 32-bit Floating Point (FP32) tensor into a Int8 tensor with range [−127, 127]: XInt8 = round \u0012 127 absmax(XFP32)XFP32 \u0013 = round(cFP32 · XFP32), (1) where c is the quantization constant or quantization scale. Dequantization is the inverse: dequant(cFP32, XInt8) = XInt8 cFP32 = XFP32 (2) The problem with this approach is that if a large magnitude value (i.e., an outlier) occurs in the input tensor, then the quantization bins—certain bit combinations—are not utilized well with few or no numbers quantized in some bins. To prevent the outlier issue, a common approach is to chunk the input tensor into blocks that are independently quantized, each with their own quantization constant c. This can"
+      },
+      {
+        "arxiv_id": "2305.14314",
+        "title": "QLoRA: Efficient Finetuning of Quantized LLMs",
+        "chunk_id": 8,
+        "page_number": 3,
+        "chunk_text": "quantized in some bins. To prevent the outlier issue, a common approach is to chunk the input tensor into blocks that are independently quantized, each with their own quantization constant c. This can be formalized as follows: We chunk the input tensor X ∈Rb×h into n contiguous blocks of size B by flattening the input tensor and slicing the linear segment into n = (b × h)/B blocks. We quantize these blocks independently with Equation 1 to create a quantized tensor and n quantization constants ci. Low-rank Adapters Low-rank Adapter (LoRA) finetuning [28] is a method that reduces memory requirements by using a small set of trainable parameters, often termed adapters, while not updating the full model parameters which remain fixed. Gradients during stochastic gradient descent are passed through the fixed pretrained model weights to the adapter, which is updated to optimize the loss function. LoRA augments a linear projection through an additional factorized projection. Given a projection XW = Y with X ∈Rb×h, W ∈Rh×o LoRA computes: Y = XW + sXL1L2, (3) where L1 ∈Rh×r and L2 ∈Rr×o, and s is a scalar. Memory Requirement of Parameter-Efficient Finetuning One important point of discussion is the memory requirement of LoRA during training both in terms of the number and size of adapters used. Since the memory footprint of LoRA is so minimal, we can use more adapters to improve performance without significantly increasing the total memory used. While LoRA was designed as a 3"
+      }
+    ]
+  },
+  "methodology-Q11": {
+    "question": "How does DPO optimize a language model using preference pairs without the conventional reward-model-plus-RL pipeline?",
+    "papers": [
+      {
+        "arxiv_id": "2305.18290",
+        "title": "Direct Preference Optimization: Your Language Model is Secretly a Reward Model"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "2305.18290",
+        "chunk_id": 3
+      },
+      {
+        "arxiv_id": "2305.18290",
+        "chunk_id": 5
+      },
+      {
+        "arxiv_id": "2305.18290",
+        "chunk_id": 7
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "2305.18290",
+        "title": "Direct Preference Optimization: Your Language Model is Secretly a Reward Model",
+        "chunk_id": 3,
+        "page_number": 2,
+        "chunk_text": "Figure 1: DPO optimizes for human preferences while avoiding reinforcement learning. Existing methods for fine-tuning language models with human feedback first fit a reward model to a dataset of prompts and human preferences over pairs of responses, and then use RL to find a policy that maximizes the learned reward. In contrast, DPO directly optimizes for the policy best satisfying the preferences with a simple classification objective, fitting an implicit reward model whose corresponding optimal policy can be extracted in closed form. we will show that the RL-based objective used by existing methods can be optimized exactly with a simple binary cross-entropy objective, greatly simplifying the preference learning pipeline. At a high level, existing methods instill the desired behaviors into a language model using curated sets of human preferences representing the types of behaviors that humans find safe and helpful. This preference learning stage occurs after an initial stage of large-scale unsupervised pre-training on a large text dataset. While the most straightforward approach to preference learning is supervised fine-tuning on human demonstrations of high quality responses, the most successful class of methods is reinforcement learning from human (or AI) feedback (RLHF/RLAIF; [12, 2]). RLHF methods fit a reward model to a dataset of human preferences and then use RL to optimize a language model policy to produce responses assigned high reward without drifting excessively"
+      },
+      {
+        "arxiv_id": "2305.18290",
+        "title": "Direct Preference Optimization: Your Language Model is Secretly a Reward Model",
+        "chunk_id": 5,
+        "page_number": 2,
+        "chunk_text": ") that measures how well a given reward function aligns with empirical preference data. However, while existing methods use the preference model to define a preference loss to train a reward model and then train a policy that optimizes the learned reward model, DPO uses a change of variables to define the preference loss as a function of the policy directly. Given a dataset of human preferences over model responses, DPO can therefore optimize a policy using a simple binary cross entropy objective, producing the optimal policy to an implicit reward function fit to the preference data. Our main contribution is Direct Preference Optimization (DPO), a simple RL-free algorithm for training language models from preferences. Our experiments show that DPO is at least as effective as existing methods, including PPO-based RLHF, for learning from preferences in tasks such as sentiment modulation, summarization, and dialogue, using language models with up to 6B parameters. 2 Related Work Self-supervised language models of increasing scale learn to complete some tasks zero-shot [33] or with few-shot prompts [6, 27, 11]. However, their performance on downstream tasks and alignment with user intent can be significantly improved by fine-tuning on datasets of instructions and human- written completions [25, 38, 13, 41]. This ‘instruction-tuning’ procedure enables LLMs to generalize to instructions outside of the instruction-tuning set and generally increase their usability [13]. Despite the"
+      },
+      {
+        "arxiv_id": "2305.18290",
+        "title": "Direct Preference Optimization: Your Language Model is Secretly a Reward Model",
+        "chunk_id": 7,
+        "page_number": 3,
+        "chunk_text": "Bradley-Terry model [5], then fine-tune a language model to maximize the given reward using reinforcement learning algorithms, commonly REINFORCE [47], proximal policy optimization (PPO; [39]), or variants [34]. A closely-related line of work leverages LLMs fine-tuned for instruction following with human feedback to generate additional synthetic preference data for targeted attributes such as safety or harmlessness [2], using only weak supervision from humans in the form of a text rubric for the LLM’s annotations. These methods represent a convergence of two bodies of work: one body of work on training language models with reinforcement learning for a variety of objectives [35, 29, 48] and another body of work on general methods for learning from human preferences [12, 21]. Despite the appeal of using relative human preferences, fine-tuning large language models with reinforcement learning remains a major practical challenge; this work provides a theoretically-justified approach to optimizing relative preferences without RL. Outside of the context of language, learning policies from preferences has been studied in both bandit and reinforcement learning settings, and several approaches have been proposed. Contextual bandit learning using preferences or rankings of actions, rather than rewards, is known as a contextual dueling bandit (CDB; [50, 14]). In the absence of absolute rewards, theoretical analysis of CDBs substitutes the notion of an optimal policy with a von Neumann"
+      }
+    ]
+  },
+  "methodology-Q12": {
+    "question": "What are the three stages of the InstructGPT training methodology, and how is the reward model used?",
+    "papers": [
+      {
+        "arxiv_id": "2203.02155",
+        "title": "Training language models to follow instructions with human feedback"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "2203.02155",
+        "chunk_id": 4
+      },
+      {
+        "arxiv_id": "2203.02155",
+        "chunk_id": 5
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "2203.02155",
+        "title": "Training language models to follow instructions with human feedback",
+        "chunk_id": 4,
+        "page_number": 2,
+        "chunk_text": "We then train a reward model (RM) on this dataset to predict which model output our labelers would prefer. Finally, we use this RM as a reward function and ﬁne-tune our supervised learning baseline to maximize this reward using the PPO algorithm (Schulman et al., 2017). We illustrate this process in Figure 2. This procedure aligns the behavior of GPT-3 to the stated preferences of a speciﬁc group of people (mostly our labelers and researchers), rather than any broader notion of “human values”; we discuss this further in Section 5.2. We call the resulting models InstructGPT. We mainly evaluate our models by having our labelers rate the quality of model outputs on our test set, consisting of prompts from held-out customers (who are not represented in the training data). We also conduct automatic evaluations on a range of public NLP datasets. We train three model 3Speciﬁcally, we train on prompts submitted to earlier versions of the InstructGPT models on the OpenAI API Playground, which were trained only using demonstration data. We ﬁlter out prompts containing PII. 2"
+      },
+      {
+        "arxiv_id": "2203.02155",
+        "title": "Training language models to follow instructions with human feedback",
+        "chunk_id": 5,
+        "page_number": 3,
+        "chunk_text": "Figure 2: A diagram illustrating the three steps of our method: (1) supervised ﬁne-tuning (SFT), (2) reward model (RM) training, and (3) reinforcement learning via proximal policy optimization (PPO) on this reward model. Blue arrows indicate that this data is used to train one of our models. In Step 2, boxes A-D are samples from our models that get ranked by labelers. See Section 3 for more details on our method. sizes (1.3B, 6B, and 175B parameters), and all of our models use the GPT-3 architecture. Our main ﬁndings are as follows: Labelers signiﬁcantly prefer InstructGPT outputs over outputs from GPT-3. On our test set, outputs from the 1.3B parameter InstructGPT model are preferred to outputs from the 175B GPT-3, despite having over 100x fewer parameters. These models have the same architecture, and differ only by the fact that InstructGPT is ﬁne-tuned on our human data. This result holds true even when we add a few-shot prompt to GPT-3 to make it better at following instructions. Outputs from our 175B InstructGPT are preferred to 175B GPT-3 outputs 85 ± 3% of the time, and preferred 71 ± 4% of the time to few-shot 175B GPT-3. InstructGPT models also generate more appropriate outputs according to our labelers, and more reliably follow explicit constraints in the instruction. InstructGPT models show improvements in truthfulness over GPT-3. On the TruthfulQA benchmark, InstructGPT generates truthful and informative answers about twice as often as GPT-3. Our results are"
+      }
+    ]
+  },
+  "methodology-Q13": {
+    "question": "What data preparation and training approach does LLaMA use, including its inspiration from compute-optimal scaling?",
+    "papers": [
+      {
+        "arxiv_id": "2302.13971",
+        "title": "LLaMA: Open and Efficient Foundation Language Models"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "2302.13971",
+        "chunk_id": 3
+      },
+      {
+        "arxiv_id": "2302.13971",
+        "chunk_id": 4
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "2302.13971",
+        "title": "LLaMA: Open and Efficient Foundation Language Models",
+        "chunk_id": 3,
+        "page_number": 2,
+        "chunk_text": "2 Approach Our training approach is similar to the methods described in previous work (Brown et al., 2020; Chowdhery et al., 2022), and is inspired by the Chinchilla scaling laws (Hoffmann et al., 2022). We train large transformers on a large quantity of textual data using a standard optimizer. 2.1 Pre-training Data Our training dataset is a mixture of several sources, reported in Table 1, that cover a diverse set of do- mains. For the most part, we reuse data sources that have been leveraged to train other LLMs, with the restriction of only using data that is publicly available, and compatible with open sourcing. This leads to the following mixture of data and the per- centage they represent in the training set: English CommonCrawl [67%]. We preprocess ﬁve CommonCrawl dumps, ranging from 2017 to 2020, with the CCNet pipeline (Wenzek et al., 2020). This process deduplicates the data at the line level, performs language identiﬁcation with a fastText linear classiﬁer to remove non-English pages and ﬁlters low quality content with an n- gram language model. In addition, we trained a linear model to classify pages used as references in Wikipedia v.s. randomly sampled pages, and discarded pages not classiﬁed as references. C4 [15%]. During exploratory experiments, we observed that using diverse pre-processed Com- monCrawl datasets improves performance. We thus included the publicly available C4 dataset (Raffel et al., 2020) in our data. The preprocessing of C4 also contains"
+      },
+      {
+        "arxiv_id": "2302.13971",
+        "title": "LLaMA: Open and Efficient Foundation Language Models",
+        "chunk_id": 4,
+        "page_number": 2,
+        "chunk_text": "hat using diverse pre-processed Com- monCrawl datasets improves performance. We thus included the publicly available C4 dataset (Raffel et al., 2020) in our data. The preprocessing of C4 also contains deduplication and language identiﬁ- cation steps: the main difference with CCNet is the quality ﬁltering, which mostly relies on heuris- tics such as presence of punctuation marks or the number of words and sentences in a webpage. Github [4.5%]. We use the public GitHub dataset available on Google BigQuery. We only kept projects that are distributed under the Apache, BSD and MIT licenses. Additionally, we ﬁltered low quality ﬁles with heuristics based on the line length or proportion of alphanumeric characters, and removed boilerplate, such as headers, with reg- ular expressions. Finally, we deduplicate the result- ing dataset at the ﬁle level, with exact matches. Wikipedia [4.5%]. We add Wikipedia dumps from the June-August 2022 period, covering 20 Dataset Sampling prop. Epochs Disk size CommonCrawl 67.0% 1.10 3.3 TB C4 15.0% 1.06 783 GB Github 4.5% 0.64 328 GB Wikipedia 4.5% 2.45 83 GB Books 4.5% 2.23 85 GB ArXiv 2.5% 1.06 92 GB StackExchange 2.0% 1.03 78 GB Table 1: Pre-training data. Data mixtures used for pre- training, for each subset we list the sampling propor- tion, number of epochs performed on the subset when training on 1.4T tokens, and disk size. The pre-training runs on 1T tokens have the same sampling proportion. languages, which use either the Latin or Cyrillic"
+      }
+    ]
+  },
+  "methodology-Q14": {
+    "question": "How does Vision Transformer convert an image into a sequence suitable for a standard Transformer encoder?",
+    "papers": [
+      {
+        "arxiv_id": "2010.11929",
+        "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "2010.11929",
+        "chunk_id": 2
+      },
+      {
+        "arxiv_id": "2010.11929",
+        "chunk_id": 7
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "2010.11929",
+        "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+        "chunk_id": 2,
+        "page_number": 1,
+        "chunk_text": "lesnikov et al., 2020). Inspired by the Transformer scaling successes in NLP, we experiment with applying a standard Transformer directly to images, with the fewest possible modiﬁcations. To do so, we split an image into patches and provide the sequence of linear embeddings of these patches as an input to a Trans- former. Image patches are treated the same way as tokens (words) in an NLP application. We train the model on image classiﬁcation in supervised fashion. When trained on mid-sized datasets such as ImageNet without strong regularization, these mod- els yield modest accuracies of a few percentage points below ResNets of comparable size. This seemingly discouraging outcome may be expected: Transformers lack some of the inductive biases 1Fine-tuning code and pre-trained models are available at https://github.com/ google-research/vision_transformer 1 arXiv:2010.11929v2 [cs.CV] 3 Jun 2021"
+      },
+      {
+        "arxiv_id": "2010.11929",
+        "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+        "chunk_id": 7,
+        "page_number": 3,
+        "chunk_text": "Published as a conference paper at ICLR 2021 Transformer Encoder MLP Head Vision Transformer (ViT) * Linear Projection of Flattened Patches * Extra learnable [ cl ass] embedding 1 2 3 4 5 6 7 8 9 0 Patch + Position Embedding Class Bird Ball Car ... Embedded Patches Multi-Head Attention Norm MLP Norm + L x + Transformer Encoder Figure 1: Model overview. We split an image into ﬁxed-size patches, linearly embed each of them, add position embeddings, and feed the resulting sequence of vectors to a standard Transformer encoder. In order to perform classiﬁcation, we use the standard approach of adding an extra learnable “classiﬁcation token” to the sequence. The illustration of the Transformer encoder was inspired by Vaswani et al. (2017). 3 METHOD In model design we follow the original Transformer (Vaswani et al., 2017) as closely as possible. An advantage of this intentionally simple setup is that scalable NLP Transformer architectures – and their efﬁcient implementations – can be used almost out of the box. 3.1 VISION TRANSFORMER (VIT) An overview of the model is depicted in Figure 1. The standard Transformer receives as input a 1D sequence of token embeddings. To handle 2D images, we reshape the image x ∈RH×W ×C into a sequence of ﬂattened 2D patches xp ∈RN×(P 2·C), where (H, W) is the resolution of the original image, C is the number of channels, (P, P) is the resolution of each image patch, and N = HW/P 2 is the resulting number of patches, which also serves as the effective"
+      }
+    ]
+  },
+  "methodology-Q15": {
+    "question": "What training objective and sampling procedure are used in DDPM to learn the reverse diffusion process?",
+    "papers": [
+      {
+        "arxiv_id": "2006.11239",
+        "title": "Denoising Diffusion Probabilistic Models"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "2006.11239",
+        "chunk_id": 8
+      },
+      {
+        "arxiv_id": "2006.11239",
+        "chunk_id": 9
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "2006.11239",
+        "title": "Denoising Diffusion Probabilistic Models",
+        "chunk_id": 8,
+        "page_number": 4,
+        "chunk_text": "Algorithm 1 Training 1: repeat 2: x0 ∼q(x0) 3: t ∼Uniform({1, . . . , T}) 4: ϵ ∼N(0, I) 5: Take gradient descent step on ∇θ ϵ −ϵθ(√¯αtx0 + √1 −¯αtϵ, t) 2 6: until converged Algorithm 2 Sampling 1: xT ∼N(0, I) 2: for t = T, . . . , 1 do 3: z ∼N(0, I) if t > 1, else z = 0 4: xt−1 = 1 √αt \u0010 xt − 1−αt √1−¯αt ϵθ(xt, t) \u0011 + σtz 5: end for 6: return x0 Equation (10) reveals that µθ must predict 1 √αt \u0010 xt − βt √1−¯αt ϵ \u0011 given xt. Since xt is available as input to the model, we may choose the parameterization µθ(xt, t) = ˜µt \u0012 xt, 1 √¯αt (xt − √ 1 −¯αtϵθ(xt)) \u0013 = 1 √αt \u0012 xt − βt √1 −¯αt ϵθ(xt, t) \u0013 (11) where ϵθ is a function approximator intended to predict ϵ from xt. To sample xt−1 ∼pθ(xt−1|xt) is to compute xt−1 = 1 √αt \u0010 xt − βt √1−¯αt ϵθ(xt, t) \u0011 +σtz, where z ∼N(0, I). The complete sampling procedure, Algorithm 2, resembles Langevin dynamics with ϵθ as a learned gradient of the data density. Furthermore, with the parameterization (11), Eq. (10) simpliﬁes to: Ex0,ϵ \u0014 β2 t 2σ2 t αt(1 −¯αt) ϵ −ϵθ(√¯αtx0 + √ 1 −¯αtϵ, t) 2\u0015 (12) which resembles denoising score matching over multiple noise scales indexed by t [55]. As Eq. (12) is equal to (one term of) the variational bound for the Langevin-like reverse process (11), we see that optimizing an objective resembling denoising score matching is equivalent to using variational inference to ﬁt the ﬁnite-time marginal of a sampling chain resembling Langevin dynamics. To summarize, we can train the reverse process mean function"
+      },
+      {
+        "arxiv_id": "2006.11239",
+        "title": "Denoising Diffusion Probabilistic Models",
+        "chunk_id": 9,
+        "page_number": 4,
+        "chunk_text": "score matching is equivalent to using variational inference to ﬁt the ﬁnite-time marginal of a sampling chain resembling Langevin dynamics. To summarize, we can train the reverse process mean function approximator µθ to predict ˜µt, or by modifying its parameterization, we can train it to predict ϵ. (There is also the possibility of predicting x0, but we found this to lead to worse sample quality early in our experiments.) We have shown that the ϵ-prediction parameterization both resembles Langevin dynamics and simpliﬁes the diffusion model’s variational bound to an objective that resembles denoising score matching. Nonetheless, it is just another parameterization of pθ(xt−1|xt), so we verify its effectiveness in Section 4 in an ablation where we compare predicting ϵ against predicting ˜µt. 3.3 Data scaling, reverse process decoder, and L0 We assume that image data consists of integers in {0, 1, . . . , 255} scaled linearly to [−1, 1]. This ensures that the neural network reverse process operates on consistently scaled inputs starting from the standard normal prior p(xT ). To obtain discrete log likelihoods, we set the last term of the reverse process to an independent discrete decoder derived from the Gaussian N(x0; µθ(x1, 1), σ2 1I): pθ(x0|x1) = D Y i=1 Z δ+(xi 0) δ−(xi 0) N(x; µi θ(x1, 1), σ2 1) dx δ+(x) = \u001a∞ if x = 1 x + 1 255 if x < 1 δ−(x) = \u001a−∞ if x = −1 x − 1 255 if x > −1 (13) where D is the data dimensionality and the i superscript indicates extraction of one"
+      }
+    ]
+  },
+  "architecture-Q01": {
+    "question": "How is the Transformer encoder-decoder architecture organized, and where does self-attention operate?",
+    "papers": [
+      {
+        "arxiv_id": "1706.03762",
+        "title": "Attention Is All You Need"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "1706.03762",
+        "chunk_id": 12
+      },
+      {
+        "arxiv_id": "1706.03762",
+        "chunk_id": 13
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "1706.03762",
+        "title": "Attention Is All You Need",
+        "chunk_id": 12,
+        "page_number": 5,
+        "chunk_text": "lf-attention layers. In a self-attention layer all of the keys, values and queries come from the same place, in this case, the output of the previous layer in the encoder. Each position in the encoder can attend to all positions in the previous layer of the encoder. • Similarly, self-attention layers in the decoder allow each position in the decoder to attend to all positions in the decoder up to and including that position. We need to prevent leftward information flow in the decoder to preserve the auto-regressive property. We implement this inside of scaled dot-product attention by masking out (setting to −∞) all values in the input of the softmax which correspond to illegal connections. See Figure 2. 3.3 Position-wise Feed-Forward Networks In addition to attention sub-layers, each of the layers in our encoder and decoder contains a fully connected feed-forward network, which is applied to each position separately and identically. This consists of two linear transformations with a ReLU activation in between. FFN(x) = max(0, xW1 + b1)W2 + b2 (2) While the linear transformations are the same across different positions, they use different parameters from layer to layer. Another way of describing this is as two convolutions with kernel size 1. The dimensionality of input and output is dmodel = 512, and the inner-layer has dimensionality dff = 2048. 3.4 Embeddings and Softmax Similarly to other sequence transduction models, we use learned embeddings to convert the input tokens"
+      },
+      {
+        "arxiv_id": "1706.03762",
+        "title": "Attention Is All You Need",
+        "chunk_id": 13,
+        "page_number": 5,
+        "chunk_text": "ut is dmodel = 512, and the inner-layer has dimensionality dff = 2048. 3.4 Embeddings and Softmax Similarly to other sequence transduction models, we use learned embeddings to convert the input tokens and output tokens to vectors of dimension dmodel. We also use the usual learned linear transfor- mation and softmax function to convert the decoder output to predicted next-token probabilities. In our model, we share the same weight matrix between the two embedding layers and the pre-softmax linear transformation, similar to [30]. In the embedding layers, we multiply those weights by √dmodel. 5"
+      }
+    ]
+  },
+  "architecture-Q02": {
+    "question": "What is the architecture of BERT's Transformer blocks, including the role of self-attention heads and hidden dimension?",
+    "papers": [
+      {
+        "arxiv_id": "1810.04805",
+        "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "1810.04805",
+        "chunk_id": 4
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "1810.04805",
+        "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding",
+        "chunk_id": 4,
+        "page_number": 2,
+        "chunk_text": "//github.com/ google-research/bert. 2 Related Work There is a long history of pre-training general lan- guage representations, and we brieﬂy review the most widely-used approaches in this section. 2.1 Unsupervised Feature-based Approaches Learning widely applicable representations of words has been an active area of research for decades, including non-neural (Brown et al., 1992; Ando and Zhang, 2005; Blitzer et al., 2006) and neural (Mikolov et al., 2013; Pennington et al., 2014) methods. Pre-trained word embeddings are an integral part of modern NLP systems, of- fering signiﬁcant improvements over embeddings learned from scratch (Turian et al., 2010). To pre- train word embedding vectors, left-to-right lan- guage modeling objectives have been used (Mnih and Hinton, 2009), as well as objectives to dis- criminate correct from incorrect words in left and right context (Mikolov et al., 2013). These approaches have been generalized to coarser granularities, such as sentence embed- dings (Kiros et al., 2015; Logeswaran and Lee, 2018) or paragraph embeddings (Le and Mikolov, 2014). To train sentence representations, prior work has used objectives to rank candidate next sentences (Jernite et al., 2017; Logeswaran and Lee, 2018), left-to-right generation of next sen- tence words given a representation of the previous sentence (Kiros et al., 2015), or denoising auto- encoder derived objectives (Hill et al., 2016). ELMo and its predecessor (Peters et al., 2017, 2018a) generalize"
+      }
+    ]
+  },
+  "architecture-Q03": {
+    "question": "How are the encoder and decoder components arranged in the attention-based neural machine translation architecture?",
+    "papers": [
+      {
+        "arxiv_id": "1409.0473",
+        "title": "Neural Machine Translation by Jointly Learning to Align and Translate"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "1409.0473",
+        "chunk_id": 5
+      },
+      {
+        "arxiv_id": "1409.0473",
+        "chunk_id": 6
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "1409.0473",
+        "title": "Neural Machine Translation by Jointly Learning to Align and Translate",
+        "chunk_id": 5,
+        "page_number": 2,
+        "chunk_text": "has already shown promising results. Sutskever et al. (2014) reported that the neural machine translation based on RNNs with long short- term memory (LSTM) units achieves close to the state-of-the-art performance of the conventional phrase-based machine translation system on an English-to-French translation task.1 Adding neural components to existing translation systems, for instance, to score the phrase pairs in the phrase table (Cho et al., 2014a) or to re-rank candidate translations (Sutskever et al., 2014), has allowed to surpass the previous state-of-the-art performance level. 2.1 RNN ENCODER–DECODER Here, we describe brieﬂy the underlying framework, called RNN Encoder–Decoder, proposed by Cho et al. (2014a) and Sutskever et al. (2014) upon which we build a novel architecture that learns to align and translate simultaneously. In the Encoder–Decoder framework, an encoder reads the input sentence, a sequence of vectors x = (x1, · · · , xTx), into a vector c.2 The most common approach is to use an RNN such that ht = f (xt, ht−1) (1) and c = q ({h1, · · · , hTx}) , where ht ∈Rn is a hidden state at time t, and c is a vector generated from the sequence of the hidden states. f and q are some nonlinear functions. Sutskever et al. (2014) used an LSTM as f and q ({h1, · · · , hT }) = hT , for instance. 1 We mean by the state-of-the-art performance, the performance of the conventional phrase-based system without using any neural network-based component. 2 Although most of the"
+      },
+      {
+        "arxiv_id": "1409.0473",
+        "title": "Neural Machine Translation by Jointly Learning to Align and Translate",
+        "chunk_id": 6,
+        "page_number": 2,
+        "chunk_text": "}) = hT , for instance. 1 We mean by the state-of-the-art performance, the performance of the conventional phrase-based system without using any neural network-based component. 2 Although most of the previous works (see, e.g., Cho et al., 2014a; Sutskever et al., 2014; Kalchbrenner and Blunsom, 2013) used to encode a variable-length input sentence into a ﬁxed-length vector, it is not necessary, and even it may be beneﬁcial to have a variable-length vector, as we will show later. 2"
+      }
+    ]
+  },
+  "architecture-Q04": {
+    "question": "How does a ResNet building block use shortcut connections to form residual mappings?",
+    "papers": [
+      {
+        "arxiv_id": "1512.03385",
+        "title": "Deep Residual Learning for Image Recognition"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "1512.03385",
+        "chunk_id": 10
+      },
+      {
+        "arxiv_id": "1512.03385",
+        "chunk_id": 12
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "1512.03385",
+        "title": "Deep Residual Learning for Image Recognition",
+        "chunk_id": 10,
+        "page_number": 3,
+        "chunk_text": "s might have difﬁculties in approximating identity mappings by multiple nonlinear layers. With the residual learning re- formulation, if identity mappings are optimal, the solvers may simply drive the weights of the multiple nonlinear lay- ers toward zero to approach identity mappings. In real cases, it is unlikely that identity mappings are op- timal, but our reformulation may help to precondition the problem. If the optimal function is closer to an identity mapping than to a zero mapping, it should be easier for the solver to ﬁnd the perturbations with reference to an identity mapping, than to learn the function as a new one. We show by experiments (Fig. 7) that the learned residual functions in general have small responses, suggesting that identity map- pings provide reasonable preconditioning. 3.2. Identity Mapping by Shortcuts We adopt residual learning to every few stacked layers. A building block is shown in Fig. 2. Formally, in this paper we consider a building block deﬁned as: y = F(x, {Wi}) + x. (1) Here x and y are the input and output vectors of the lay- ers considered. The function F(x, {Wi}) represents the residual mapping to be learned. For the example in Fig. 2 that has two layers, F = W2σ(W1x) in which σ denotes 2This hypothesis, however, is still an open question. See [28]. ReLU [29] and the biases are omitted for simplifying no- tations. The operation F + x is performed by a shortcut connection and element-wise addition. We adopt the sec- ond nonlinearity"
+      },
+      {
+        "arxiv_id": "1512.03385",
+        "title": "Deep Residual Learning for Image Recognition",
+        "chunk_id": 12,
+        "page_number": 3,
+        "chunk_text": "F has only a single layer, Eqn.(1) is similar to a linear layer: y = W1x + x, for which we have not observed advantages. We also note that although the above notations are about fully-connected layers for simplicity, they are applicable to convolutional layers. The function F(x, {Wi}) can repre- sent multiple convolutional layers. The element-wise addi- tion is performed on two feature maps, channel by channel. 3.3. Network Architectures We have tested various plain/residual nets, and have ob- served consistent phenomena. To provide instances for dis- cussion, we describe two models for ImageNet as follows. Plain Network. Our plain baselines (Fig. 3, middle) are mainly inspired by the philosophy of VGG nets [41] (Fig. 3, left). The convolutional layers mostly have 3×3 ﬁlters and follow two simple design rules: (i) for the same output feature map size, the layers have the same number of ﬁl- ters; and (ii) if the feature map size is halved, the num- ber of ﬁlters is doubled so as to preserve the time com- plexity per layer. We perform downsampling directly by convolutional layers that have a stride of 2. The network ends with a global average pooling layer and a 1000-way fully-connected layer with softmax. The total number of weighted layers is 34 in Fig. 3 (middle). It is worth noticing that our model has fewer ﬁlters and lower complexity than VGG nets [41] (Fig. 3, left). Our 34- layer baseline has 3.6 billion FLOPs (multiply-adds), which is only 18% of VGG-19 (19.6 billion"
+      }
+    ]
+  },
+  "architecture-Q05": {
+    "question": "What components form the RAG model architecture, including the query encoder, document index, and generator?",
+    "papers": [
+      {
+        "arxiv_id": "2005.11401",
+        "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "2005.11401",
+        "chunk_id": 3
+      },
+      {
+        "arxiv_id": "2005.11401",
+        "chunk_id": 4
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "2005.11401",
+        "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+        "chunk_id": 3,
+        "page_number": 2,
+        "chunk_text": "The Divine Comedy (x) q Query Encoder q(x) MIPS pθ Generator pθ (Parametric) Margin- alize This 14th century work is divided into 3 sections: \"Inferno\", \"Purgatorio\" & \"Paradiso\" (y) End-to-End Backprop through q and pθ Barack Obama was born in Hawaii.(x) Fact Veriﬁcation: Fact Query supports (y) Question Generation Fact Veriﬁcation: Label Generation Document Index Define \"middle ear\"(x) Question Answering: Question Query The middle ear includes the tympanic cavity and the three ossicles. (y) Question Answering: Answer Generation Retriever pη (Non-Parametric) z4 z3 z2 z1 d(z) Jeopardy Question Generation: Answer Query Figure 1: Overview of our approach. We combine a pre-trained retriever (Query Encoder + Document Index) with a pre-trained seq2seq model (Generator) and ﬁne-tune end-to-end. For query x, we use Maximum Inner Product Search (MIPS) to ﬁnd the top-K documents zi. For ﬁnal prediction y, we treat z as a latent variable and marginalize over seq2seq predictions given different documents. but have only explored open-domain extractive question answering. Here, we bring hybrid parametric and non-parametric memory to the “workhorse of NLP,” i.e. sequence-to-sequence (seq2seq) models. We endow pre-trained, parametric-memory generation models with a non-parametric memory through a general-purpose ﬁne-tuning approach which we refer to as retrieval-augmented generation (RAG). We build RAG models where the parametric memory is a pre-trained seq2seq transformer, and the"
+      },
+      {
+        "arxiv_id": "2005.11401",
+        "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks",
+        "chunk_id": 4,
+        "page_number": 2,
+        "chunk_text": "y through a general-purpose ﬁne-tuning approach which we refer to as retrieval-augmented generation (RAG). We build RAG models where the parametric memory is a pre-trained seq2seq transformer, and the non-parametric memory is a dense vector index of Wikipedia, accessed with a pre-trained neural retriever. We combine these components in a probabilistic model trained end-to-end (Fig. 1). The retriever (Dense Passage Retriever [26], henceforth DPR) provides latent documents conditioned on the input, and the seq2seq model (BART [32]) then conditions on these latent documents together with the input to generate the output. We marginalize the latent documents with a top-K approximation, either on a per-output basis (assuming the same document is responsible for all tokens) or a per-token basis (where different documents are responsible for different tokens). Like T5 [51] or BART, RAG can be ﬁne-tuned on any seq2seq task, whereby both the generator and retriever are jointly learned. There has been extensive previous work proposing architectures to enrich systems with non-parametric memory which are trained from scratch for speciﬁc tasks, e.g. memory networks [64, 55], stack- augmented networks [25] and memory layers [30]. In contrast, we explore a setting where both parametric and non-parametric memory components are pre-trained and pre-loaded with extensive knowledge. Crucially, by using pre-trained access mechanisms, the ability to access knowledge is present without additional"
+      }
+    ]
+  },
+  "architecture-Q06": {
+    "question": "What architectural dimensions and parameterization are discussed in the neural language model scaling study?",
+    "papers": [
+      {
+        "arxiv_id": "2001.08361",
+        "title": "Scaling Laws for Neural Language Models"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "2001.08361",
+        "chunk_id": 3
+      },
+      {
+        "arxiv_id": "2001.08361",
+        "chunk_id": 13
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "2001.08361",
+        "title": "Scaling Laws for Neural Language Models",
+        "chunk_id": 3,
+        "page_number": 2,
+        "chunk_text": "focusing on the Transformer architecture [VSP+17, LSP+18]. The high ceiling and low ﬂoor for performance on language tasks allows us to study trends over more than seven orders of magnitude in scale. Throughout we will observe precise power-law scalings for performance as a function of training time, con- text length, dataset size, model size, and compute budget. 1.1 Summary Our key ﬁndings for Transformer language models are are as follows: 2Here we display predicted compute when using a sufﬁciently small batch size. See Figure 13 for comparison to the purely empirical data. 2"
+      },
+      {
+        "arxiv_id": "2001.08361",
+        "title": "Scaling Laws for Neural Language Models",
+        "chunk_id": 13,
+        "page_number": 6,
+        "chunk_text": "given value of the loss. This is the training compute that would be used if the model were trained at a batch size much less than the critical batch size. • Smin – an estimate of the minimal number of training steps needed to reach a given value of the loss. This is also the number of training steps that would be used if the model were trained at a batch size much greater than the critical batch size. • αX – power-law exponents for the scaling of the loss as L(X) ∝1/XαX where X can be any of N, D, C, S, B, Cmin. 2 Background and Methods We train language models on WebText2, an extended version of the WebText [RWC+19] dataset, tokenized using byte-pair encoding [SHB15] with a vocabulary size nvocab = 50257. We optimize the autoregres- sive log-likelihood (i.e. cross-entropy loss) averaged over a 1024-token context, which is also our principal performance metric. We record the loss on the WebText2 test distribution and on a selection of other text distributions. We primarily train decoder-only [LSP+18, RNSS18] Transformer [VSP+17] models, though we also train LSTM models and Universal Transformers [DGV+18] for comparison. 2.1 Parameter and Compute Scaling of Transformers We parameterize the Transformer architecture using hyperparameters nlayer (number of layers), dmodel (di- mension of the residual stream), dﬀ(dimension of the intermediate feed-forward layer), dattn (dimension of the attention output), and nheads (number of attention heads per layer). We include nctx tokens in"
+      }
+    ]
+  },
+  "architecture-Q07": {
+    "question": "What model architecture choices and scaling configurations are used in Chinchilla?",
+    "papers": [
+      {
+        "arxiv_id": "2203.15556",
+        "title": "Training Compute-Optimal Large Language Models"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "2203.15556",
+        "chunk_id": 10
+      },
+      {
+        "arxiv_id": "2203.15556",
+        "chunk_id": 11
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "2203.15556",
+        "title": "Training Compute-Optimal Large Language Models",
+        "chunk_id": 10,
+        "page_number": 4,
+        "chunk_text": "-to-width ratio for a variety of standard model sizes. We use slightly less deep models than proposed as this translates to better wall-clock performance on our hardware. Improved model architectures. Recently, various promising alternatives to traditional dense trans- formers have been proposed. For example, through the use of conditional computation large MoE models like the 1.7 trillion parameter Switch transformer (Fedus et al., 2021), the 1.2 Trillion pa- rameter GLaM model (Du et al., 2021), and others (Artetxe et al., 2021; Zoph et al., 2022) are able to provide a large eﬀective model size despite using relatively fewer training and inference FLOPs. However, for very large models the computational beneﬁts of routed models seems to diminish (Clark et al., 2022). An orthogonal approach to improving language models is to augment transformers with explicit retrieval mechanisms, as done by Borgeaud et al. (2021); Guu et al. (2020); Lewis et al. (2020). This approach eﬀectively increases the number of data tokens seen during training (by a factor of ∼10 in Borgeaud et al. (2021)). This suggests that the performance of language models may be more dependant on the size of the training data than previously thought. 3. Estimating the optimal parameter/training tokens allocation We present three diﬀerent approaches to answer the question driving our research: Given a ﬁxed FLOPs budget, how should one trade-oﬀmodel size and the number of training tokens? In all three cases we"
+      },
+      {
+        "arxiv_id": "2203.15556",
+        "title": "Training Compute-Optimal Large Language Models",
+        "chunk_id": 11,
+        "page_number": 4,
+        "chunk_text": "We present three diﬀerent approaches to answer the question driving our research: Given a ﬁxed FLOPs budget, how should one trade-oﬀmodel size and the number of training tokens? In all three cases we start by training a range of models varying both model size and the number of training tokens and use the resulting training curves to ﬁt an empirical estimator of how they should scale. We assume a power-law relationship between compute and model size as done in Clark et al. (2022); Kaplan et al. (2020), though future work may want to include potential curvature in this relationship for large model sizes. The resulting predictions are similar for all three methods and suggest that parameter count and number of training tokens should be increased equally with more compute3— with proportions reported in Table 2. This is in clear contrast to previous work on this topic and warrants further investigation. 3We compute FLOPs as described in Appendix F. 4"
+      }
+    ]
+  },
+  "architecture-Q08": {
+    "question": "How are LoRA's A and B matrices integrated with a pretrained layer, and how can task-specific modules be swapped?",
+    "papers": [
+      {
+        "arxiv_id": "2106.09685",
+        "title": "LoRA: Low-Rank Adaptation of Large Language Models"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "2106.09685",
+        "chunk_id": 4
+      },
+      {
+        "arxiv_id": "2106.09685",
+        "chunk_id": 12
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "2106.09685",
+        "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+        "chunk_id": 4,
+        "page_number": 2,
+        "chunk_text": "sks. We can freeze the shared model and efﬁciently switch tasks by replacing the matrices A and B in Figure 1, reducing the storage requirement and task-switching over- head signiﬁcantly. • LoRA makes training more efﬁcient and lowers the hardware barrier to entry by up to 3 times when using adaptive optimizers since we do not need to calculate the gradients or maintain the optimizer states for most parameters. Instead, we only optimize the injected, much smaller low-rank matrices. • Our simple linear design allows us to merge the trainable matrices with the frozen weights when deployed, introducing no inference latency compared to a fully ﬁne-tuned model, by construction. • LoRA is orthogonal to many prior methods and can be combined with many of them, such as preﬁx-tuning. We provide an example in Appendix E. Terminologies and Conventions We make frequent references to the Transformer architecture and use the conventional terminologies for its dimensions. We call the input and output di- mension size of a Transformer layer dmodel. We use Wq, Wk, Wv, and Wo to refer to the query/key/value/output projection matrices in the self-attention module. W or W0 refers to a pre- trained weight matrix and ∆W its accumulated gradient update during adaptation. We use r to denote the rank of a LoRA module. We follow the conventions set out by (Vaswani et al., 2017; Brown et al., 2020) and use Adam (Loshchilov & Hutter, 2019; Kingma & Ba, 2017) for model optimization and use a Transformer"
+      },
+      {
+        "arxiv_id": "2106.09685",
+        "title": "LoRA: Low-Rank Adaptation of Large Language Models",
+        "chunk_id": 12,
+        "page_number": 5,
+        "chunk_text": "guarantees that we do not introduce any additional latency during inference compared to a ﬁne-tuned model by construction. 4.2 APPLYING LORA TO TRANSFORMER In principle, we can apply LoRA to any subset of weight matrices in a neural network to reduce the number of trainable parameters. In the Transformer architecture, there are four weight matrices in the self-attention module (Wq, Wk, Wv, Wo) and two in the MLP module. We treat Wq (or Wk, Wv) as a single matrix of dimension dmodel ×dmodel, even though the output dimension is usually sliced into attention heads. We limit our study to only adapting the attention weights for downstream tasks and freeze the MLP modules (so they are not trained in downstream tasks) both for simplicity and parameter-efﬁciency.We further study the effect on adapting different types of attention weight matrices in a Transformer in Section 7.1. We leave the empirical investigation of adapting the MLP layers, LayerNorm layers, and biases to a future work. Practical Beneﬁts and Limitations. The most signiﬁcant beneﬁt comes from the reduction in memory and storage usage. For a large Transformer trained with Adam, we reduce that VRAM usage by up to 2/3 if r ≪dmodel as we do not need to store the optimizer states for the frozen parameters. On GPT-3 175B, we reduce the VRAM consumption during training from 1.2TB to 350GB. With r = 4 and only the query and value projection matrices being adapted, the checkpoint size is reduced by roughly 10,000× (from"
+      }
+    ]
+  },
+  "architecture-Q09": {
+    "question": "What are the key architectural components of QLoRA, and how do 4-bit quantization and paged optimizers interact with LoRA?",
+    "papers": [
+      {
+        "arxiv_id": "2305.14314",
+        "title": "QLoRA: Efficient Finetuning of Quantized LLMs"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "2305.14314",
+        "chunk_id": 7
+      },
+      {
+        "arxiv_id": "2305.14314",
+        "chunk_id": 18
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "2305.14314",
+        "title": "QLoRA: Efficient Finetuning of Quantized LLMs",
+        "chunk_id": 7,
+        "page_number": 3,
+        "chunk_text": "Figure 1: Different finetuning methods and their memory requirements. QLORA improves over LoRA by quantizing the transformer model to 4-bit precision and using paged optimizers to handle memory spikes. 2 Background Block-wise k-bit Quantization Quantization is the process of discretizing an input from a rep- resentation that holds more information to a representation with less information. It often means taking a data type with more bits and converting it to fewer bits, for example from 32-bit floats to 8-bit Integers. To ensure that the entire range of the low-bit data type is used, the input data type is commonly rescaled into the target data type range through normalization by the absolute maximum of the input elements, which are usually structured as a tensor. For example, quantizing a 32-bit Floating Point (FP32) tensor into a Int8 tensor with range [−127, 127]: XInt8 = round \u0012 127 absmax(XFP32)XFP32 \u0013 = round(cFP32 · XFP32), (1) where c is the quantization constant or quantization scale. Dequantization is the inverse: dequant(cFP32, XInt8) = XInt8 cFP32 = XFP32 (2) The problem with this approach is that if a large magnitude value (i.e., an outlier) occurs in the input tensor, then the quantization bins—certain bit combinations—are not utilized well with few or no numbers quantized in some bins. To prevent the outlier issue, a common approach is to chunk the input tensor into blocks that are independently quantized, each with their own quantization constant c. This can"
+      },
+      {
+        "arxiv_id": "2305.14314",
+        "title": "QLoRA: Efficient Finetuning of Quantized LLMs",
+        "chunk_id": 18,
+        "page_number": 6,
+        "chunk_text": "A tuning on a single 24/48GB GPU, we do not provide hard measurements for Paged Optimiz- ers since the paging only occurs when processing mini-batches with long sequence lengths, which is rare. We do, however, perform an analysis of the runtime of paged optimizers for 65B models on 48GB GPUs and find that with a batch size of 16, paged optimizers provide the same training speed as regular optimizers. Future work should measure and characterize under what circumstances slow- downs occur from the paging process. Default LoRA hyperparameters do not match 16- bit performance When using the standard prac- tice of applying LoRA to query and value attention projection matrices [28], we are not able to replicate full finetuning performance for large base models. As shown in Figure 2 for LLaMA 7B finetuning on Alpaca, we find that the most critical LoRA hyper- parameter is how many LoRA adapters are used in total and that LoRA on all linear transformer block layers are required to match full finetuning perfor- mance. Other LoRA hyperparameters, such as the projection dimension r, do not affect performance (see Appendix A). 1010 1011 Total model bits 0.60 0.61 0.62 0.63 0.64 0.65 0.66 0.67 Mean zeroshot accuracy 4-bit LLaMA Float NFloat NFloat + DQ Data type Figure 3: Mean zero-shot accuracy over Wino- grande, HellaSwag, PiQA, Arc-Easy, and Arc- Challenge using LLaMA models with different 4-bit data types. The NormalFloat data type significantly improves the bit-for-bit accuracy gains"
+      }
+    ]
+  },
+  "architecture-Q10": {
+    "question": "What is the architecture of the DPO training pipeline relative to the traditional RLHF pipeline?",
+    "papers": [
+      {
+        "arxiv_id": "2305.18290",
+        "title": "Direct Preference Optimization: Your Language Model is Secretly a Reward Model"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "2305.18290",
+        "chunk_id": 3
+      },
+      {
+        "arxiv_id": "2305.18290",
+        "chunk_id": 9
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "2305.18290",
+        "title": "Direct Preference Optimization: Your Language Model is Secretly a Reward Model",
+        "chunk_id": 3,
+        "page_number": 2,
+        "chunk_text": "Figure 1: DPO optimizes for human preferences while avoiding reinforcement learning. Existing methods for fine-tuning language models with human feedback first fit a reward model to a dataset of prompts and human preferences over pairs of responses, and then use RL to find a policy that maximizes the learned reward. In contrast, DPO directly optimizes for the policy best satisfying the preferences with a simple classification objective, fitting an implicit reward model whose corresponding optimal policy can be extracted in closed form. we will show that the RL-based objective used by existing methods can be optimized exactly with a simple binary cross-entropy objective, greatly simplifying the preference learning pipeline. At a high level, existing methods instill the desired behaviors into a language model using curated sets of human preferences representing the types of behaviors that humans find safe and helpful. This preference learning stage occurs after an initial stage of large-scale unsupervised pre-training on a large text dataset. While the most straightforward approach to preference learning is supervised fine-tuning on human demonstrations of high quality responses, the most successful class of methods is reinforcement learning from human (or AI) feedback (RLHF/RLAIF; [12, 2]). RLHF methods fit a reward model to a dataset of human preferences and then use RL to optimize a language model policy to produce responses assigned high reward without drifting excessively"
+      },
+      {
+        "arxiv_id": "2305.18290",
+        "title": "Direct Preference Optimization: Your Language Model is Secretly a Reward Model",
+        "chunk_id": 9,
+        "page_number": 3,
+        "chunk_text": "n high-quality data for the downstream task(s) of interest (dialogue, summarization, etc.), to obtain a model πSFT. Reward Modelling Phase: In the second phase the SFT model is prompted with prompts x to produce pairs of answers (y1, y2) ∼πSFT(y | x). These are then presented to human labelers who express preferences for one answer, denoted as yw ≻yl | x where yw and yl denotes the preferred and dispreferred completion amongst (y1, y2) respectively. The preferences are assumed to be generated by some latent reward model r∗(y, x), which we do not have access to. There are a number of approaches used to model preferences, the Bradley-Terry (BT) [5] model being a popular choice (although more general Plackett-Luce ranking models [32, 23] are also compatible with the framework if we have access to several ranked answers). The BT model stipulates that the human preference distribution p∗can be written as: p∗(y1 ≻y2 | x) = exp (r∗(x, y1)) exp (r∗(x, y1)) + exp (r∗(x, y2)). (1) Assuming access to a static dataset of comparisons D = \b x(i), y(i) w , y(i) l N i=1 sampled from p∗, we can parametrize a reward model rϕ(x, y) and estimate the parameters via maximum likelihood. Framing the problem as a binary classification we have the negative log-likelihood loss: LR(rϕ, D) = −E(x,yw,yl)∼D \u0002 log σ(rϕ(x, yw) −rϕ(x, yl)) \u0003 (2) where σ is the logistic function. In the context of LMs, the network rϕ(x, y) is often initialized from the SFT model πSFT(y | x) with the addition of a linear layer"
+      }
+    ]
+  },
+  "architecture-Q11": {
+    "question": "How does the InstructGPT architecture/workflow connect supervised fine-tuning, reward modeling, and PPO?",
+    "papers": [
+      {
+        "arxiv_id": "2203.02155",
+        "title": "Training language models to follow instructions with human feedback"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "2203.02155",
+        "chunk_id": 5
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "2203.02155",
+        "title": "Training language models to follow instructions with human feedback",
+        "chunk_id": 5,
+        "page_number": 3,
+        "chunk_text": "Figure 2: A diagram illustrating the three steps of our method: (1) supervised ﬁne-tuning (SFT), (2) reward model (RM) training, and (3) reinforcement learning via proximal policy optimization (PPO) on this reward model. Blue arrows indicate that this data is used to train one of our models. In Step 2, boxes A-D are samples from our models that get ranked by labelers. See Section 3 for more details on our method. sizes (1.3B, 6B, and 175B parameters), and all of our models use the GPT-3 architecture. Our main ﬁndings are as follows: Labelers signiﬁcantly prefer InstructGPT outputs over outputs from GPT-3. On our test set, outputs from the 1.3B parameter InstructGPT model are preferred to outputs from the 175B GPT-3, despite having over 100x fewer parameters. These models have the same architecture, and differ only by the fact that InstructGPT is ﬁne-tuned on our human data. This result holds true even when we add a few-shot prompt to GPT-3 to make it better at following instructions. Outputs from our 175B InstructGPT are preferred to 175B GPT-3 outputs 85 ± 3% of the time, and preferred 71 ± 4% of the time to few-shot 175B GPT-3. InstructGPT models also generate more appropriate outputs according to our labelers, and more reliably follow explicit constraints in the instruction. InstructGPT models show improvements in truthfulness over GPT-3. On the TruthfulQA benchmark, InstructGPT generates truthful and informative answers about twice as often as GPT-3. Our results are"
+      }
+    ]
+  },
+  "architecture-Q12": {
+    "question": "What LLaMA model sizes and architectural parameters (dimensions, heads, layers) are reported?",
+    "papers": [
+      {
+        "arxiv_id": "2302.13971",
+        "title": "LLaMA: Open and Efficient Foundation Language Models"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "2302.13971",
+        "chunk_id": 7
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "2302.13971",
+        "title": "LLaMA: Open and Efficient Foundation Language Models",
+        "chunk_id": 7,
+        "page_number": 3,
+        "chunk_text": "params dimension n heads n layers learning rate batch size n tokens 6.7B 4096 32 32 3.0e−4 4M 1.0T 13.0B 5120 40 40 3.0e−4 4M 1.0T 32.5B 6656 52 60 1.5e−4 4M 1.4T 65.2B 8192 64 80 1.5e−4 4M 1.4T Table 2: Model sizes, architectures, and optimization hyper-parameters. Overall, our entire training dataset contains roughly 1.4T tokens after tokenization. For most of our training data, each token is used only once dur- ing training, with the exception of the Wikipedia and Books domains, over which we perform ap- proximately two epochs. 2.2 Architecture Following recent work on large language models, our network is based on the transformer architec- ture (Vaswani et al., 2017). We leverage various improvements that were subsequently proposed, and used in different models such as PaLM. Here are the main difference with the original architec- ture, and where we were found the inspiration for this change (in bracket): Pre-normalization [GPT3]. To improve the training stability, we normalize the input of each transformer sub-layer, instead of normalizing the output. We use the RMSNorm normalizing func- tion, introduced by Zhang and Sennrich (2019). SwiGLU activation function [PaLM]. We re- place the ReLU non-linearity by the SwiGLU ac- tivation function, introduced by Shazeer (2020) to improve the performance. We use a dimension of 2 34d instead of 4d as in PaLM. Rotary Embeddings [GPTNeo]. We remove the absolute positional embeddings, and instead, add rotary positional embeddings"
+      }
+    ]
+  },
+  "architecture-Q13": {
+    "question": "What is the Vision Transformer encoder architecture after patch embedding, including the class token and MLP head?",
+    "papers": [
+      {
+        "arxiv_id": "2010.11929",
+        "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "2010.11929",
+        "chunk_id": 7
+      },
+      {
+        "arxiv_id": "2010.11929",
+        "chunk_id": 9
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "2010.11929",
+        "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+        "chunk_id": 7,
+        "page_number": 3,
+        "chunk_text": "Published as a conference paper at ICLR 2021 Transformer Encoder MLP Head Vision Transformer (ViT) * Linear Projection of Flattened Patches * Extra learnable [ cl ass] embedding 1 2 3 4 5 6 7 8 9 0 Patch + Position Embedding Class Bird Ball Car ... Embedded Patches Multi-Head Attention Norm MLP Norm + L x + Transformer Encoder Figure 1: Model overview. We split an image into ﬁxed-size patches, linearly embed each of them, add position embeddings, and feed the resulting sequence of vectors to a standard Transformer encoder. In order to perform classiﬁcation, we use the standard approach of adding an extra learnable “classiﬁcation token” to the sequence. The illustration of the Transformer encoder was inspired by Vaswani et al. (2017). 3 METHOD In model design we follow the original Transformer (Vaswani et al., 2017) as closely as possible. An advantage of this intentionally simple setup is that scalable NLP Transformer architectures – and their efﬁcient implementations – can be used almost out of the box. 3.1 VISION TRANSFORMER (VIT) An overview of the model is depicted in Figure 1. The standard Transformer receives as input a 1D sequence of token embeddings. To handle 2D images, we reshape the image x ∈RH×W ×C into a sequence of ﬂattened 2D patches xp ∈RN×(P 2·C), where (H, W) is the resolution of the original image, C is the number of channels, (P, P) is the resolution of each image patch, and N = HW/P 2 is the resulting number of patches, which also serves as the effective"
+      },
+      {
+        "arxiv_id": "2010.11929",
+        "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale",
+        "chunk_id": 9,
+        "page_number": 3,
+        "chunk_text": "encoder (Vaswani et al., 2017) consists of alternating layers of multiheaded self- attention (MSA, see Appendix A) and MLP blocks (Eq. 2, 3). Layernorm (LN) is applied before every block, and residual connections after every block (Wang et al., 2019; Baevski & Auli, 2019). 3"
+      }
+    ]
+  },
+  "architecture-Q14": {
+    "question": "What neural network architecture parameterizes the reverse diffusion transition in DDPM?",
+    "papers": [
+      {
+        "arxiv_id": "2006.11239",
+        "title": "Denoising Diffusion Probabilistic Models"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "2006.11239",
+        "chunk_id": 2
+      },
+      {
+        "arxiv_id": "2006.11239",
+        "chunk_id": 9
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "2006.11239",
+        "title": "Denoising Diffusion Probabilistic Models",
+        "chunk_id": 2,
+        "page_number": 2,
+        "chunk_text": "! xT −! · · · −! xt −−−−−! xt−1 −! · · · −! x0 p✓(xt−1|xt) q(xt|xt−1) Figure 2: The directed graphical model considered in this work. This paper presents progress in diffusion probabilistic models [53]. A diffusion probabilistic model (which we will call a “diffusion model” for brevity) is a parameterized Markov chain trained using variational inference to produce samples matching the data after ﬁnite time. Transitions of this chain are learned to reverse a diffusion process, which is a Markov chain that gradually adds noise to the data in the opposite direction of sampling until signal is destroyed. When the diffusion consists of small amounts of Gaussian noise, it is sufﬁcient to set the sampling chain transitions to conditional Gaussians too, allowing for a particularly simple neural network parameterization. Diffusion models are straightforward to deﬁne and efﬁcient to train, but to the best of our knowledge, there has been no demonstration that they are capable of generating high quality samples. We show that diffusion models actually are capable of generating high quality samples, sometimes better than the published results on other types of generative models (Section 4). In addition, we show that a certain parameterization of diffusion models reveals an equivalence with denoising score matching over multiple noise levels during training and with annealed Langevin dynamics during sampling (Section 3.2) [55, 61]. We obtained our best sample quality results using this"
+      },
+      {
+        "arxiv_id": "2006.11239",
+        "title": "Denoising Diffusion Probabilistic Models",
+        "chunk_id": 9,
+        "page_number": 4,
+        "chunk_text": "score matching is equivalent to using variational inference to ﬁt the ﬁnite-time marginal of a sampling chain resembling Langevin dynamics. To summarize, we can train the reverse process mean function approximator µθ to predict ˜µt, or by modifying its parameterization, we can train it to predict ϵ. (There is also the possibility of predicting x0, but we found this to lead to worse sample quality early in our experiments.) We have shown that the ϵ-prediction parameterization both resembles Langevin dynamics and simpliﬁes the diffusion model’s variational bound to an objective that resembles denoising score matching. Nonetheless, it is just another parameterization of pθ(xt−1|xt), so we verify its effectiveness in Section 4 in an ablation where we compare predicting ϵ against predicting ˜µt. 3.3 Data scaling, reverse process decoder, and L0 We assume that image data consists of integers in {0, 1, . . . , 255} scaled linearly to [−1, 1]. This ensures that the neural network reverse process operates on consistently scaled inputs starting from the standard normal prior p(xT ). To obtain discrete log likelihoods, we set the last term of the reverse process to an independent discrete decoder derived from the Gaussian N(x0; µθ(x1, 1), σ2 1I): pθ(x0|x1) = D Y i=1 Z δ+(xi 0) δ−(xi 0) N(x; µi θ(x1, 1), σ2 1) dx δ+(x) = \u001a∞ if x = 1 x + 1 255 if x < 1 δ−(x) = \u001a−∞ if x = −1 x − 1 255 if x > −1 (13) where D is the data dimensionality and the i superscript indicates extraction of one"
+      }
+    ]
+  },
+  "architecture-Q15": {
+    "question": "How is RoBERTa's Transformer architecture specified in terms of layers, attention heads, and hidden dimension?",
+    "papers": [
+      {
+        "arxiv_id": "1907.11692",
+        "title": "RoBERTa: A Robustly Optimized BERT Pretraining Approach"
+      }
+    ],
+    "expected_chunk_ids": [
+      {
+        "arxiv_id": "1907.11692",
+        "chunk_id": 4
+      }
+    ],
+    "expected_chunks": [
+      {
+        "arxiv_id": "1907.11692",
+        "title": "RoBERTa: A Robustly Optimized BERT Pretraining Approach",
+        "chunk_id": 4,
+        "page_number": 2,
+        "chunk_text": "now ubiquitous transformer archi- tecture (Vaswani et al., 2017), which we will not review in detail. We use a transformer architecture with L layers. Each block uses A self-attention heads and hidden dimension H. 2.3 Training Objectives During pretraining, BERT uses two objectives: masked language modeling and next sentence pre- diction. Masked Language Model (MLM) A random sample of the tokens in the input sequence is selected and replaced with the special token [MASK]. The MLM objective is a cross-entropy loss on predicting the masked tokens. BERT uni- formly selects 15% of the input tokens for possi- ble replacement. Of the selected tokens, 80% are replaced with [MASK], 10% are left unchanged, and 10% are replaced by a randomly selected vo- cabulary token. In the original implementation, random mask- ing and replacement is performed once in the be- ginning and saved for the duration of training, al- though in practice, data is duplicated so the mask is not always the same for every training sentence (see Section 4.1). Next Sentence Prediction (NSP) NSP is a bi- nary classiﬁcation loss for predicting whether two segments follow each other in the original text. Positive examples are created by taking consecu- tive sentences from the text corpus. Negative ex- amples are created by pairing segments from dif- ferent documents. Positive and negative examples are sampled with equal probability. The NSP objective was designed to improve performance on downstream tasks, such as"
+      }
+    ]
+  }
+}

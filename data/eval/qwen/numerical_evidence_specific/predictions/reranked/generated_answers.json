@@ -1,0 +1,402 @@
+{
+  "numerical-evidence-Q01": {
+    "question": "In Table 4, what training vocabulary sizes and vector dimensionalities are compared for the Mikolov RNNLM word vectors?",
+    "papers": [
+      {
+        "arxiv_id": "1301.3781",
+        "title": "Efficient Estimation of Word Representations in Vector Space"
+      }
+    ],
+    "answer": "Based on the information provided in the given text, Table 4 compares Mikolov RNNLM word vectors trained with different training vocabulary sizes and vector dimensionalities. Specifically, it mentions that the CBOW model was trained on subsets of the training data with vocabulary restricted to the most frequent 30k words. However, the exact training vocabulary sizes and vector dimensionalities compared in Table 4 are not specified in the given text. The text does not provide this level of detail for Table 4."
+  },
+  "numerical-evidence-Q02": {
+    "question": "According to Table 2, what is the CBOW semantic-syntactic accuracy for 300-dimensional vectors trained on 783M words?",
+    "papers": [
+      {
+        "arxiv_id": "1301.3781",
+        "title": "Efficient Estimation of Word Representations in Vector Space"
+      }
+    ],
+    "answer": "I don't see Table 2 directly referenced in the provided text. However, based on the information given, we can infer that Table 2 contains accuracy data for different model architectures and vector dimensions, and presumably different amounts of training data. The question asks specifically about the CBOW architecture with 300-dimensional vectors trained on 783M words for the semantic-syntactic task. \n\nUnfortunately, without having the exact details of Table 2, I cannot give you the precise accuracy number. But if Table 2 were to include this information, we could identify the corresponding value."
+  },
+  "numerical-evidence-Q03": {
+    "question": "In Table 2, how many hours were reported for RNNsearch-50, and what GPU was used?",
+    "papers": [
+      {
+        "arxiv_id": "1409.0473",
+        "title": "Neural Machine Translation by Jointly Learning to Align and Translate"
+      }
+    ],
+    "answer": "The information regarding the exact number of hours spent on training and the specific GPU used for RNNsearch-50 is not provided in Table 2. Table 2 typically focuses on statistics related to training all the models, such as the number of training steps, gradient norms, and other metrics, but not the detailed time taken for training or the hardware used.\n\nTo answer this question definitively, we would need additional information not present in the provided excerpts."
+  },
+  "numerical-evidence-Q04": {
+    "question": "In Figure 2, what sentence-length range is plotted against BLEU score for the translation models?",
+    "papers": [
+      {
+        "arxiv_id": "1409.0473",
+        "title": "Neural Machine Translation by Jointly Learning to Align and Translate"
+      }
+    ],
+    "answer": "In Figure 2, the sentence-length range plotted against BLEU score for the translation models is 30 words and 50 words."
+  },
+  "numerical-evidence-Q05": {
+    "question": "What ImageNet test error did the ResNet ensemble achieve, and what placement did this result win at ILSVRC 2015?",
+    "papers": [
+      {
+        "arxiv_id": "1512.03385",
+        "title": "Deep Residual Learning for Image Recognition"
+      }
+    ],
+    "answer": "The ResNet ensemble achieved a test error rate of 3.57% on the ImageNet validation set, and this result won the 1st place at ILSVRC 2015."
+  },
+  "numerical-evidence-Q06": {
+    "question": "What network depths are compared in the ResNet architecture table, and what is the maximum depth listed?",
+    "papers": [
+      {
+        "arxiv_id": "1512.03385",
+        "title": "Deep Residual Learning for Image Recognition"
+      }
+    ],
+    "answer": "In the ResNet architecture table, two network depths are compared: 18 layers and 34 layers. The maximum depth listed in the table is 34 layers."
+  },
+  "numerical-evidence-Q07": {
+    "question": "In Table 2, what BLEU scores and training-cost values are reported for the Transformer and comparison systems on EN-DE and EN-FR?",
+    "papers": [
+      {
+        "arxiv_id": "1706.03762",
+        "title": "Attention Is All You Need"
+      }
+    ],
+    "answer": "In Table 2, the BLEU scores and training-cost values for the Transformer and comparison systems on EN-DE and EN-FR are not explicitly reported. The text provided does not contain these specific details. It mentions BLEU scores but does not specify the training-cost values or their corresponding systems for EN-DE and EN-FR."
+  },
+  "numerical-evidence-Q08": {
+    "question": "In Table 3, what are the base Transformer settings for N, d_model, d_ff, number of heads, and parameter count?",
+    "papers": [
+      {
+        "arxiv_id": "1706.03762",
+        "title": "Attention Is All You Need"
+      }
+    ],
+    "answer": "Based on the information provided in the given context, Table 3 is not mentioned. Therefore, I cannot directly extract the base Transformer settings for N, d_model, d_ff, number of heads, and parameter count from Table 3. However, I can provide the information based on the content available until Table 3.\n\nThe base settings for the Transformer model are:\n- N = 6 (number of encoder and decoder layers)\n- d_model = 512 (dimensionality of the model's output and input)\n- d_ff = 2048 (dimensionality of the feed-forward network inside the transformer block)\n- Number of heads = 8 (number of attention heads used in multi-head attention mechanism)\n\nThe parameter count for the base Transformer model is provided as 25 million parameters."
+  },
+  "numerical-evidence-Q09": {
+    "question": "In Table 1, what GLUE average scores are reported for BERTBASE and BERTLARGE?",
+    "papers": [
+      {
+        "arxiv_id": "1810.04805",
+        "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding"
+      }
+    ],
+    "answer": "In Table 1 of the paper, the GLUE average scores reported for BERTBASE and BERTLARGE are not explicitly provided. Table 1 primarily focuses on the results of various pre-training tasks using the BERTBASE architecture, not the GLUE benchmark results for these model sizes. For GLUE scores, readers should refer to Table 4 in the paper, which contains GLUE average scores for both BERTBASE and BERTLARGE."
+  },
+  "numerical-evidence-Q10": {
+    "question": "What parameter counts and number of layers are given for BERTBASE and BERTLARGE in the paper’s model descriptions?",
+    "papers": [
+      {
+        "arxiv_id": "1810.04805",
+        "title": "BERT: Pre-training of Deep Bidirectional Transformers for Language Understanding"
+      }
+    ],
+    "answer": "The paper does not explicitly provide the exact number of parameters or the exact number of layers for BERTBASE and BERTLARGE in its model descriptions. However, it mentions that BERTLARGE is described as a larger version of BERTBASE. Given this, we can infer that BERTLARGE would likely have more parameters and more layers than BERTBASE. Specifically:\n\n- BERTBASE is described as a model that pre-trains with 12 layers of the Transformer architecture.\n- BERTLARGE is implied to have more layers than BERTBASE, but the exact number is not specified.\n\nFor parameter counts, it states that BERTLARGE has about twice the parameters of BERTBASE, suggesting a doubling in parameters from the base to the large version.\n\nSo, while we don't have the exact counts, BERTLARGE can be reasonably assumed to have more parameters and more layers than BERTBASE."
+  },
+  "numerical-evidence-Q11": {
+    "question": "According to the training-cost table, what hours, energy use (kWh·PUE), CO2e, and cloud cost are reported for Transformerbase?",
+    "papers": [
+      {
+        "arxiv_id": "1906.02243",
+        "title": "Energy and Policy Considerations for Deep Learning in NLP"
+      }
+    ],
+    "answer": "Based on the information provided in the context, the hours, energy use (kWh·PUE), CO2e, and cloud cost for the Transformer base model are not directly listed. The context provides detailed information for other models like ELMo, BERT, and GPT-2, but does not specify these metrics for the Transformer base model. For accurate data on the Transformer base model, one would need to refer to the specific section or table containing the details for that model."
+  },
+  "numerical-evidence-Q12": {
+    "question": "What resource categories does the paper measure for training NLP models, and which case study includes tuning and experimentation?",
+    "papers": [
+      {
+        "arxiv_id": "1906.02243",
+        "title": "Energy and Policy Considerations for Deep Learning in NLP"
+      }
+    ],
+    "answer": "The paper measures GPU and CPU power consumption for training NLP models. The case study that includes tuning and experimentation is the case study of the full sum of resources required for the development and tuning of a recent state-of-the-art NLP pipeline (Strubell et al., 2018)."
+  },
+  "numerical-evidence-Q13": {
+    "question": "In Table 8, what GLUE development scores are reported for RoBERTaLARGE at 300k and 500k pretraining steps?",
+    "papers": [
+      {
+        "arxiv_id": "1907.11692",
+        "title": "RoBERTa: A Robustly Optimized BERT Pretraining Approach"
+      }
+    ],
+    "answer": "In Table 8, the GLUE development scores for RoBERTaLARGE at 300k and 500k pretraining steps are not directly provided. The table presents the full set of development set results for RoBERTa, including the LARGE conﬁguration following BERTLARGE, but does not specify the exact pretraining steps for these two configurations."
+  },
+  "numerical-evidence-Q14": {
+    "question": "In the GLUE comparison table, what average score is reported for RoBERTa versus BERTLARGE?",
+    "papers": [
+      {
+        "arxiv_id": "1907.11692",
+        "title": "RoBERTa: A Robustly Optimized BERT Pretraining Approach"
+      }
+    ],
+    "answer": "According to the GLUE comparison table in the paper, the average scores for RoBERTa and BERTLARGE are not directly reported together in a single average. However, we can calculate the average scores for each and compare them.\n\nFor RoBERTaLARGE, the average scores across the GLUE tasks are:\n- MNLI: 87.6\n- QNLI: 92.8\n- QQP: 91.9\n- RTE: 78.7\n- SST: 94.8\n- MRPC: 90.2\n- CoLA: 63.6\n- STS: 91.2\n\nFor BERTLARGE, the average scores across the GLUE tasks are:\n- MNLI: 89.0\n- QNLI: 93.9\n- QQP: 91.9\n- RTE: 84.5\n- SST: 95.3\n- MRPC: 90.2\n- CoLA: 66.3\n- STS: 91.6\n\nTo find the difference in average scores between RoBERTaLARGE and BERTLARGE:\nAverage score for RoBERTaLARGE = (87.6 + 92.8 + 91.9 + 78.7 + 94.8 + 90.2 + 63.6 + 91.2) / 8 = 86.8\nAverage score for BERTLARGE = (89.0 + 93.9 + 91.9 + 84.5 + 95.3 + 90.2 + 66.3 + 91.6) / 8 = 87.8\n\nThus, RoBERTaLARGE has an average score of approximately 86.8, while BERTLARGE has an average score of approximately 87.8."
+  },
+  "numerical-evidence-Q15": {
+    "question": "In the results table, what scores are reported for the “Full data set” configuration across the listed tasks?",
+    "papers": [
+      {
+        "arxiv_id": "1910.10683",
+        "title": "Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer"
+      }
+    ],
+    "answer": "The results table does not contain scores for the \"Full data set\" configuration. The table primarily reports performance metrics for various configurations of T5 (like T5-Small, T5-Base, T5-Large, T5-3B, and T5-11B) across different tasks such as GLUE, SuperGLUE, and others."
+  },
+  "numerical-evidence-Q16": {
+    "question": "How does the table’s reported average span length setting of 10 relate to the displayed task scores?",
+    "papers": [
+      {
+        "arxiv_id": "1910.10683",
+        "title": "Exploring the Limits of Transfer Learning with a Unified Text-to-Text Transformer"
+      }
+    ],
+    "answer": "The table's reported average span length setting of 10 does not directly relate to the displayed task scores. The span length setting refers to how the system is configured to handle spans (specific segments of text) in question answering tasks like SQuAD, but it does not influence the scores reported for the tasks themselves. The scores shown in the table are results of the model's performance on the tasks, unaffected by the span length setting. The span length setting might affect how the model processes and extracts spans in a specific task, but it does not impact the scores presented for those tasks."
+  },
+  "numerical-evidence-Q17": {
+    "question": "What three variables does the paper identify as scaling the language-model cross-entropy loss by power laws?",
+    "papers": [
+      {
+        "arxiv_id": "2001.08361",
+        "title": "Scaling Laws for Neural Language Models"
+      }
+    ],
+    "answer": "The paper identifies three variables as scaling the language-model cross-entropy loss by power laws: \n\n1. Model size (number of model parameters, excluding embeddings)\n2. Dataset size (number of tokens in the dataset)\n3. Amount of compute used for training"
+  },
+  "numerical-evidence-Q18": {
+    "question": "In Figure 20, what model parameter count is used for the per-token test-loss example, and what token-index range is shown?",
+    "papers": [
+      {
+        "arxiv_id": "2001.08361",
+        "title": "Scaling Laws for Neural Language Models"
+      }
+    ],
+    "answer": "Based on the information provided in the context, Figure 20 does not contain specific details about the model parameter count used for the per-token test-loss example or the exact token-index range shown. The context only mentions Figure 20 in the context of discussing sample efficiency improvements, but does not provide specific details about the example presented in that figure."
+  },
+  "numerical-evidence-Q19": {
+    "question": "In Table 1, what test scores are reported for RAG on Natural Questions, TriviaQA, WebQuestions, and CuratedTrec?",
+    "papers": [
+      {
+        "arxiv_id": "2005.11401",
+        "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks"
+      }
+    ],
+    "answer": "In Table 1, the test scores reported for RAG on Natural Questions (NQ), TriviaQA (TQA), WebQuestions (WQ), and CuratedTrec (CT) are as follows:\n\n- NQ: 29.7\n- TQA: 41.5\n- WQ: 32.1\n- CT: 33.1"
+  },
+  "numerical-evidence-Q20": {
+    "question": "In Table 4, what percentages indicate human assessments where RAG was judged better than BART for factuality and specificity?",
+    "papers": [
+      {
+        "arxiv_id": "2005.11401",
+        "title": "Retrieval-Augmented Generation for Knowledge-Intensive NLP Tasks"
+      }
+    ],
+    "answer": "I cannot directly extract the specific percentages from Table 4 as there is no Table 4 present in the provided text. The text discusses various aspects related to Table 4 (like human evaluation of factuality and specificity), but does not provide the exact percentages for RAG outperforming BART. Please check if Table 4 contains the relevant information or refer to another table in the text."
+  },
+  "numerical-evidence-Q21": {
+    "question": "What is the GPT-3 largest model parameter count stated in the paper’s abstract, and what smaller model sizes are included in the model family?",
+    "papers": [
+      {
+        "arxiv_id": "2005.14165",
+        "title": "Language Models are Few-Shot Learners"
+      }
+    ],
+    "answer": "The GPT-3 largest model parameter count stated in the paper's abstract is 175 billion parameters. The smaller model sizes included in the GPT-3 model family are 2.7 billion parameters, 6.7 billion parameters, and 13 billion parameters. Additionally, the base model size, referred to as GPT-3 Small, has 80 billion parameters."
+  },
+  "numerical-evidence-Q22": {
+    "question": "What number of examples per task does the paper use to distinguish zero-shot, one-shot, and few-shot evaluation?",
+    "papers": [
+      {
+        "arxiv_id": "2005.14165",
+        "title": "Language Models are Few-Shot Learners"
+      }
+    ],
+    "answer": "The paper does not specify a fixed number of examples per task for distinguishing zero-shot, one-shot, and few-shot evaluation. Instead, it uses the number of examples that fits into the model's context window (typically 10 to 100 examples) for few-shot and one-shot evaluations. For zero-shot, it uses only a natural language task description. The number of examples in context (K) can be any value from 0 to the maximum allowed by the model's context window, which is nctx = 2048 for all models and typically fits 10 to 100 examples."
+  },
+  "numerical-evidence-Q23": {
+    "question": "What Inception Score and FID score are reported for the unconditional CIFAR-10 results in the abstract?",
+    "papers": [
+      {
+        "arxiv_id": "2006.11239",
+        "title": "Denoising Diffusion Probabilistic Models"
+      }
+    ],
+    "answer": "The abstract does not provide specific Inception Scores and FID Scores for the unconditional CIFAR-10 results. It only states that the unconditional model achieves better sample quality than most models in the literature, with an FID score of 3.17 and another FID score of 5.24 when computed with respect to the test set. However, it does not break down these scores or provide them in the abstract."
+  },
+  "numerical-evidence-Q24": {
+    "question": "In Table 1, what Inception Score, FID, and NLL values are listed for the CIFAR-10 model comparisons?",
+    "papers": [
+      {
+        "arxiv_id": "2006.11239",
+        "title": "Denoising Diffusion Probabilistic Models"
+      }
+    ],
+    "answer": "In Table 1 of the provided information, the Inception Score, FID (Frechet Inception Distance), and NLL (Negative Log Likelihood) values for CIFAR-10 model comparisons are listed. However, specific numerical values for these metrics are not provided directly in the text snippet given. The text mentions that the Inception Score for our CIFAR model is 3.17 and that our CIFAR10 model achieves better sample quality than most models in the literature, including class conditional models. The FID score is computed with respect to the training set, as is standard practice; when computed with respect to the test set, the score is 5.24, which is still better than many of the training set FID scores in the literature.\n\nFor a detailed breakdown of Inception Scores, FID, and NLL values, one would need to refer to the Table 1 in the actual document, which is not included in the provided text. Specific numbers for these metrics are not provided in the snippet provided."
+  },
+  "numerical-evidence-Q25": {
+    "question": "What patch dimensions are stated in the title, and how are image patches treated by the Vision Transformer?",
+    "papers": [
+      {
+        "arxiv_id": "2010.11929",
+        "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale"
+      }
+    ],
+    "answer": "The title states that the image is worth 16x16 words, which in the context of this paper refers to the patch size used by the Vision Transformer. According to the paper, image patches are treated in two main ways within the Vision Transformer:\n\n1. **Raw Image Patches**: The input sequence is formed directly from raw image patches. The paper emphasizes that this is the standard approach for the Vision Transformer, where the patches are obtained by cutting the image into smaller segments. \n\n2. **Feature Maps of a CNN**: As an alternative to raw image patches, the input sequence can be formed from feature maps of a CNN. This hybrid model applies the patch embedding projection E to patches extracted from a CNN feature map. In this case, the patches can have a spatial size of 1x1, meaning that the input sequence is obtained by simply flattening these feature maps.\n\nIn summary, the Vision Transformer can use either raw image patches or feature maps of a CNN as input sequences, depending on the specific implementation."
+  },
+  "numerical-evidence-Q26": {
+    "question": "In the table, what exaFLOPs and benchmark results are reported for the ViT-B/16 and ViT-L/16 configurations?",
+    "papers": [
+      {
+        "arxiv_id": "2010.11929",
+        "title": "An Image is Worth 16x16 Words: Transformers for Image Recognition at Scale"
+      }
+    ],
+    "answer": "I'm sorry, but the provided text does not contain information about the exaFLOPs and benchmark results specifically for the ViT-B/16 and ViT-L/16 configurations. The information discussed in the text is related to the pre-training cost of different models and their transfer performance, rather than detailed performance metrics like exaFLOPs and benchmarks. Therefore, I cannot extract the required data from the given text."
+  },
+  "numerical-evidence-Q27": {
+    "question": "How many image-text pairs were used to pre-train CLIP, according to the abstract?",
+    "papers": [
+      {
+        "arxiv_id": "2103.00020",
+        "title": "Learning Transferable Visual Models From Natural Language Supervision"
+      }
+    ],
+    "answer": "According to the abstract, the pre-training dataset for CLIP consists of 400 million (image, text) pairs."
+  },
+  "numerical-evidence-Q28": {
+    "question": "In the reported results table, what scores are shown for the listed CLIP model variants across the benchmark columns?",
+    "papers": [
+      {
+        "arxiv_id": "2103.00020",
+        "title": "Learning Transferable Visual Models From Natural Language Supervision"
+      }
+    ],
+    "answer": "In the reported results table, the scores shown for the listed CLIP model variants across the benchmark columns would be the scores achieved by these CLIP model variants on the various datasets. The specific scores would depend on the performance of CLIP variants (such as ViT-L/14 architecture and different pixel image sizes) on the 27 datasets. Since the provided excerpt doesn't contain the full table data, it's not possible to list the exact scores for all CLIP model variants. However, it mentions that the best-performing CLIP model achieved the state of the art in 21 of the 27 datasets."
+  },
+  "numerical-evidence-Q29": {
+    "question": "Using GPT-3 175B as the example, why does the paper say independent full fine-tuned instances are expensive?",
+    "papers": [
+      {
+        "arxiv_id": "2106.09685",
+        "title": "LoRA: Low-Rank Adaptation of Large Language Models"
+      }
+    ],
+    "answer": "The paper states that independent full fine-tuned instances for different tasks are expensive in terms of the hardware required and the storage/switching cost for hosting these instances. Specifically, for GPT-3 175B, storing 100 adapted models requires 350GB + 35MB * 100 ≈354GB, as opposed to 100 * 350GB ≈35TB for 100 separate models, suggesting the cost is significantly reduced with LoRA adaptation."
+  },
+  "numerical-evidence-Q30": {
+    "question": "In the parameter comparison table, how many trainable parameters does RoBERTa-base full fine-tuning use versus LoRA?",
+    "papers": [
+      {
+        "arxiv_id": "2106.09685",
+        "title": "LoRA: Low-Rank Adaptation of Large Language Models"
+      }
+    ],
+    "answer": "I do not have the specific number of trainable parameters used by RoBERTa-base full fine-tuning versus LoRA from the provided text. The provided text does not contain a parameter comparison table for RoBERTa-base and LoRA. It discusses the trainable parameters used by LoRA for different models and datasets, but does not compare these to full fine-tuning for RoBERTa-base."
+  },
+  "numerical-evidence-Q31": {
+    "question": "How many labeler-written demonstrations and comparison data points are described in the paper’s training setup?",
+    "papers": [
+      {
+        "arxiv_id": "2203.02155",
+        "title": "Training language models to follow instructions with human feedback"
+      }
+    ],
+    "answer": "The paper describes two types of labeler-written data points: labeler-written demonstrations and labeler-written comparison data points. Specifically, for obtaining demonstrations, the paper mentions asking labelers to write three kinds of prompts, one of which is \"Few-shot\" where labelers are asked to come up with an instruction and multiple query/response pairs for that instruction. This suggests that demonstrations are derived from these few-shot instructions. Comparison data points are also mentioned, as labelers are asked to write comparison data points (prompts) corresponding to various use cases stated in applications to the OpenAI API, which are then used for training the reward model.\n\nHowever, the exact number of demonstrations and comparison data points is not specified in the chunk provided."
+  },
+  "numerical-evidence-Q32": {
+    "question": "In Table 14, what automatic evaluation metric values are reported for the GPT, SFT, PPO, and PPO+PTX model groups?",
+    "papers": [
+      {
+        "arxiv_id": "2203.02155",
+        "title": "Training language models to follow instructions with human feedback"
+      }
+    ],
+    "answer": "In Table 14, the automatic evaluation metric values reported for the GPT, SFT, PPO, and PPO+PTX model groups include BLEU score for the Translate Fr => En task and F1 score for the DROP task."
+  },
+  "numerical-evidence-Q33": {
+    "question": "What model-size range and token-count range does the paper say it trained across?",
+    "papers": [
+      {
+        "arxiv_id": "2203.15556",
+        "title": "Training Compute-Optimal Large Language Models"
+      }
+    ],
+    "answer": "The paper trained models across a range of parameter counts from 70 million to over 10 billion parameters. For the number of training tokens, the paper mentions training over 300 billion tokens, both in the main analysis and in the training of Chinchilla, which was trained for much longer than 300 billion tokens."
+  },
+  "numerical-evidence-Q34": {
+    "question": "In the model configuration table, what parameter sizes and corresponding model dimensions, head counts, and layer counts are listed?",
+    "papers": [
+      {
+        "arxiv_id": "2203.15556",
+        "title": "Training Compute-Optimal Large Language Models"
+      }
+    ],
+    "answer": "The provided text snippets do not contain a specific table named \"model configuration\" that lists parameter sizes and corresponding model dimensions, head counts, and layer counts. The text discusses approaches for estimating compute-optimal large language models, FLOP (Flops) calculations, and model size estimations, but does not provide a detailed model configuration table."
+  },
+  "numerical-evidence-Q35": {
+    "question": "What parameter-size range does the LLaMA family span, and which LLaMA size is said to outperform GPT-3 175B on most benchmarks?",
+    "papers": [
+      {
+        "arxiv_id": "2302.13971",
+        "title": "LLaMA: Open and Efficient Foundation Language Models"
+      }
+    ],
+    "answer": "The LLaMA family spans a parameter-size range from 7B to 65B. LLaMA-13B is said to outperform GPT-3 on most benchmarks despite being 5-10× smaller."
+  },
+  "numerical-evidence-Q36": {
+    "question": "In the MMLU results table, what scores are listed for GPT-3, Gopher, Chinchilla, and LLaMA model sizes?",
+    "papers": [
+      {
+        "arxiv_id": "2302.13971",
+        "title": "LLaMA: Open and Efficient Foundation Language Models"
+      }
+    ],
+    "answer": "Based on the information provided in the text, the scores listed for GPT-3, Gopher, Chinchilla, and LLaMA on the MMLU (Massive Multilingual Understanding) benchmark in Table 9 are as follows:\n\n- **GPT-3**: The table shows the GPT-3 model has scores in the range of 74.1 to 81.0 across various domains. \n- **Gopher**: This model scored around 81.0 to 85.0 in different domains.\n- **Chinchilla**: The Chinchilla model's scores range from 80.1 to 82.3 in different domains.\n- **LLaMA-65B**: The table doesn't directly specify these scores for LLaMA. However, it is mentioned that LLaMA-65B outperforms Chinchilla-70B on multiple domains but is behind PaLM-540B by a few percent in average, and across most domains.\n\nSo, for GPT-3, we have scores from 74.1 to 81.0. For Chinchilla and Gopher, the scores range from 80.1 to 85.0. However, for LLaMA-65B, the exact scores are not provided in the summary mentioned."
+  },
+  "numerical-evidence-Q37": {
+    "question": "What quantization bit-width and GPU memory capacity does QLoRA report enabling fine-tuning a 65B model on a single GPU?",
+    "papers": [
+      {
+        "arxiv_id": "2305.14314",
+        "title": "QLoRA: Efficient Finetuning of Quantized LLMs"
+      }
+    ],
+    "answer": "Based on the information provided in the paper, QLoRA enables fine-tuning a 65B model on a single GPU by using 4-bit quantization and 48GB GPU memory capacity. This is indicated in the experimental setup where they measure post-quantization zero-shot accuracy and perplexity across different models for model sizes 125M - 13B, including a 65B model."
+  },
+  "numerical-evidence-Q38": {
+    "question": "In Table 6, what percentage of ChatGPT’s performance does Guanaco-65B achieve on the Vicuna benchmark?",
+    "papers": [
+      {
+        "arxiv_id": "2305.14314",
+        "title": "QLoRA: Efficient Finetuning of Quantized LLMs"
+      }
+    ],
+    "answer": "In Table 6, Guanaco-65B achieves 100 percentage points higher than ChatGPT on the Vicuna benchmark."
+  },
+  "numerical-evidence-Q39": {
+    "question": "What are the key numerical properties reported for the DPO evaluation setup in the paper’s abstract or introduction?",
+    "papers": [
+      {
+        "arxiv_id": "2305.18290",
+        "title": "Direct Preference Optimization: Your Language Model is Secretly a Reward Model"
+      }
+    ],
+    "answer": "The key numerical properties reported for the DPO evaluation setup in the abstract or introduction are not explicitly stated in the provided text. However, based on the provided text, some numerical properties related to DPO evaluation are mentioned:\n\n1. **DPO (temp = 1.0) Win Rate**: The win rate is reported as 0.30.\n2. **DPO (temp = 0.7) Win Rate**: The win rate is reported as 0.35.\n3. **Anthropic-HH Dialogue Win Rate**: The win rate is reported as 0.25.\n\nThese are the main numerical values given for DPO evaluation across different conditions. The paper suggests these win rates are computed by GPT-4 for Anthropic-HH one-step dialogue."
+  },
+  "numerical-evidence-Q40": {
+    "question": "In Figure 3, what temperature settings and fine-tuning-step range are shown in the dialogue win-rate plots?",
+    "papers": [
+      {
+        "arxiv_id": "2305.18290",
+        "title": "Direct Preference Optimization: Your Language Model is Secretly a Reward Model"
+      }
+    ],
+    "answer": "Based on the information provided in the section, Figure 3 shows the performance convergence of DPO (Direct Preference Optimization) relatively quickly. However, the specific temperature settings and fine-tuning-step range for the dialogue win-rate plots are not detailed in the provided text."
+  }
+}

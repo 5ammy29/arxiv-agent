@@ -1,0 +1,22 @@
+{
+  "dataset_path": "data/eval/qwen/single_paper/datasets/single_paper_retrieval_eval_dataset.json",
+  "retrieval_results_path": "data/eval/qwen/single_paper/predictions/retrieval/qwen_single_paper_retrieval_baseline_predictions.json",
+  "question_count": 80,
+  "questions_missing_retrieval_results": [],
+  "metrics_macro_average": {
+    "MRR": 0.6884523809523809,
+    "Precision@1": 0.5375,
+    "Recall@1": 0.18125,
+    "nDCG@1": 0.46964285714285714,
+    "Precision@3": 0.3833333333333333,
+    "Recall@3": 0.39166666666666666,
+    "nDCG@3": 0.44663703268698957,
+    "Precision@5": 0.3075,
+    "Recall@5": 0.5229166666666667,
+    "nDCG@5": 0.5091245752624605,
+    "Precision@10": 0.20500000000000002,
+    "Recall@10": 0.7041666666666666,
+    "nDCG@10": 0.5792097270988801
+  },
+  "per_question_csv": "data/eval/qwen/single_paper/results/retrieval_eval_per_question.csv"
+}
